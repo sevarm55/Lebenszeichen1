@@ -30,7 +30,10 @@ export interface QualityReport {
 export interface QualityInput {
   title: string
   subtitle?: string
+  /** The value that will actually be stored — typed, or derived from the body. */
   excerpt: string
+  /** True when nothing was typed and the excerpt came from the first paragraph. */
+  excerptIsDerived?: boolean
   document: ArticleDocument
   categoryId?: string | null
   heroImageId?: string | null
@@ -57,11 +60,19 @@ export function evaluateQuality(input: QualityInput): QualityReport {
     push('title', `Заголовок очень короткий (${titleLen} симв.)`, 'warn')
   else push('title', 'Заголовок в порядке', 'ok')
 
-  // --- Лид / описание
-  if (!input.excerpt.trim()) push('excerpt', 'Нет краткого описания', 'blocking')
-  else if (input.excerpt.trim().length < 60)
-    push('excerpt', 'Краткое описание слишком короткое', 'warn')
-  else push('excerpt', 'Краткое описание в порядке', 'ok')
+  // --- Анонс
+  // Not blocking: an empty field falls back to the first paragraph on save, so
+  // the card is never left blank. It only fails when there is no body either.
+  const excerpt = input.excerpt.trim()
+  if (!excerpt) {
+    push('excerpt', 'Нет анонса и нет текста, из которого его взять', 'blocking')
+  } else if (excerpt.length < 60) {
+    push('excerpt', 'Анонс слишком короткий', 'warn', 'Оптимум — 80–220 символов.')
+  } else if (input.excerptIsDerived) {
+    push('excerpt', 'Анонс взят из первого абзаца', 'ok')
+  } else {
+    push('excerpt', 'Анонс в порядке', 'ok')
+  }
 
   // --- Объём
   if (words === 0) push('body', 'Текст статьи пуст', 'blocking')

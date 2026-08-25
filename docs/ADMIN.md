@@ -38,12 +38,18 @@ Left column:
 shown; if it is not configured you get an explanation, not a dead button.
 
 **Основные поля** — title (with per-field rewrite and a live duplicate check on
-blur), cover, excerpt, tags, and the `featured` / `editor's pick` switches.
-Character counters show the optimal range rather than a hard limit.
+blur), cover, tags, and the `featured` / `editor's pick` switches. Character
+counters show the optimal range rather than a hard limit.
 
-Slug and author sit behind a **Дополнительно** disclosure, collapsed by default:
-the slug is generated from the title and the author rarely changes, so neither
-belongs in the daily path. The collapsed row still shows the current slug.
+**Дополнительно** — a disclosure, collapsed by default, holding excerpt, slug and
+author. None of the three needs attention on a normal post:
+
+- the **excerpt** falls back to the first paragraph on save (`deriveExcerpt`), so
+  a card is never left blank; the field shows exactly what will be stored;
+- the **slug** is generated from the title;
+- the **author** rarely changes.
+
+The collapsed row still shows the current slug, so the URL is never hidden.
 
 There is no subtitle field — the public article does not render one.
 
@@ -64,7 +70,8 @@ addresses.
 quick presets (+1 h, +3 h, tomorrow 09:00). Publish is refused while blocking
 checklist items remain.
 
-**Готовность к публикации** — the live quality checklist. See
+**Готовность к публикации** — the live quality checklist, evaluated on the
+values that will actually be stored (a derived excerpt counts as present). See
 [CONTENT_WORKFLOW.md](CONTENT_WORKFLOW.md).
 
 **Происхождение** — for AI-assisted posts: origin, provider, model, source.

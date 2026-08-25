@@ -54,7 +54,8 @@ Deliberately not a score out of 100 — that is theatre. Two states only:
 **Готово к публикации** or **Нужно проверить**.
 
 **Blocking** (publish is refused):
-- no title, no excerpt, empty body
+- no title, empty body
+- no excerpt *and* no body to derive one from
 - no category
 - no cover image — a Facebook share without an image loses most of its clicks
 - no meta description

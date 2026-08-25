@@ -26,6 +26,7 @@ import { apiFetch } from '@/lib/admin-client'
 import { cn, formatDateTimeInput, slugify } from '@/lib/utils'
 import { SUPPORTED_LANGUAGES } from '@/config/site'
 import {
+  deriveExcerpt,
   documentToPlainText,
   documentWordCount,
   parseDocument,
@@ -140,11 +141,18 @@ export function PostEditor({
 
   const wordCount = useMemo(() => documentWordCount(document), [document])
 
+  // Left empty, the excerpt is generated from the first paragraph on save —
+  // which is why the field belongs under "Дополнительно" rather than in the
+  // daily path. This is what will actually be stored.
+  const derivedExcerpt = useMemo(() => deriveExcerpt(document), [document])
+  const effectiveExcerpt = excerpt.trim() || derivedExcerpt
+
   const quality = useMemo(
     () =>
       evaluateQuality({
         title,
-        excerpt,
+        excerpt: effectiveExcerpt,
+        excerptIsDerived: !excerpt.trim(),
         document,
         categoryId,
         heroImageId: hero?.mediaId ?? null,
@@ -154,7 +162,7 @@ export function PostEditor({
         sourceUrl: initial.sourceUrl,
         aiUsed: initial.aiUsed,
       }),
-    [title, excerpt, document, categoryId, hero, metaDescription, seoTitle, initial],
+    [title, excerpt, effectiveExcerpt, document, categoryId, hero, metaDescription, seoTitle, initial],
   )
 
   const updateTitle = (value: string) => {
@@ -298,7 +306,7 @@ export function PostEditor({
     const payload = {
       title,
       slug: slug || slugify(title),
-      excerpt,
+      excerpt: effectiveExcerpt,
       document,
       status: statusFor(mode),
       origin: initial.origin ?? (initial.sourceUrl ? 'URL_IMPORT' : 'MANUAL'),
@@ -487,27 +495,6 @@ export function PostEditor({
               />
             </Field>
 
-            <Field label="Краткое описание (анонс)" htmlFor="excerpt" required>
-              <div className="flex gap-2">
-                <Textarea
-                  id="excerpt"
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  rows={2}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  loading={busy === 'excerpt'}
-                  onClick={() => rewriteField('excerpt', excerpt, 'excerpt', setExcerpt)}
-                >
-                  <Languages className="h-4 w-4" />
-                </Button>
-              </div>
-              <CharCount value={excerpt.length} ideal={[80, 220]} />
-            </Field>
-
             <Field label="Теги">
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
@@ -570,7 +557,7 @@ export function PostEditor({
                 <ChevronDown
                   className={cn('h-3.5 w-3.5 transition-transform', advancedOpen && 'rotate-180')}
                 />
-                Дополнительно — адрес и автор
+                Дополнительно — анонс, адрес, автор
                 {!advancedOpen && (
                   <span className="ml-1 truncate text-xs text-[var(--color-muted-soft)]">
                     /{slug || slugify(title) || '…'}
@@ -579,7 +566,39 @@ export function PostEditor({
               </button>
 
               {advancedOpen && (
-                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <div className="mt-3 space-y-4">
+                  <Field label="Краткое описание (анонс на карточках)" htmlFor="excerpt">
+                    <div className="flex gap-2">
+                      <Textarea
+                        id="excerpt"
+                        value={excerpt}
+                        onChange={(e) => setExcerpt(e.target.value)}
+                        rows={2}
+                        placeholder={derivedExcerpt || 'Формируется из первого абзаца'}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Перефразировать"
+                        loading={busy === 'excerpt'}
+                        onClick={() =>
+                          rewriteField('excerpt', effectiveExcerpt, 'excerpt', setExcerpt)
+                        }
+                      >
+                        <Languages className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {excerpt.trim() ? (
+                      <CharCount value={excerpt.length} ideal={[80, 220]} />
+                    ) : (
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">
+                        Пусто — будет взят первый абзац: «{derivedExcerpt || '…'}»
+                      </p>
+                    )}
+                  </Field>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Адрес (slug)" htmlFor="slug">
                     <Input
                       id="slug"
@@ -614,6 +633,7 @@ export function PostEditor({
                       ))}
                     </select>
                   </Field>
+                  </div>
                 </div>
               )}
             </div>
