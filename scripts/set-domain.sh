@@ -45,14 +45,7 @@ print(f'  SITE_URL / NEXT_PUBLIC_SITE_URL -> {url}')
 PY
 
 echo "▸ Updating the Site row"
-npx tsx --env-file=.env -e "
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
-const domain = process.argv[1]
-await prisma.site.updateMany({ where: { key: 'de' }, data: { domain } })
-console.log('  Site.domain ->', domain)
-await prisma.\$disconnect()
-" "$DOMAIN"
+npx tsx --env-file=.env scripts/set-site-domain.ts "$DOMAIN"
 
 echo "▸ Regenerating the fallback OG image"
 npx tsx --env-file=.env scripts/make-og-default.ts
