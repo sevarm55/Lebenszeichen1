@@ -122,6 +122,15 @@ Every AI call with status, provider, model, linked post, duration and error.
 Counters for queued / processing / completed / failed. This is what makes an AI
 failure diagnosable instead of a spinner that never resolves.
 
+## My account `/admin/account`
+
+Reachable from the user block at the bottom of the sidebar. Password change
+(current password required, minimum 10 characters with a letter and a digit),
+last login, active session count, and the last ten audit entries for this user.
+
+Changing a password revokes **every** session for that user — that is the point
+of changing it — so the browser is sent back to the login screen.
+
 ## Settings `/admin/settings`
 
 `ADMIN` and above. Six tabs:

@@ -113,13 +113,16 @@ export function AdminShell({ user, siteName, children }: AdminShellProps) {
         </nav>
 
         <div className="border-t border-[var(--color-border)] p-3">
-          <div className="mb-2 px-1">
+          <Link
+            href="/admin/account"
+            className="mb-2 block rounded-sm px-1 py-1 transition-colors hover:bg-[var(--color-surface-sunken)]"
+          >
             <p className="truncate text-sm font-medium">{user.name}</p>
             <p className="truncate text-xs text-[var(--color-muted)]">{user.email}</p>
             <p className="mt-1 inline-block rounded-sm bg-[var(--color-surface-sunken)] px-1.5 py-0.5 text-[0.625rem] font-medium uppercase tracking-wider text-[var(--color-muted)]">
               {user.role}
             </p>
-          </div>
+          </Link>
           <button
             type="button"
             onClick={logout}

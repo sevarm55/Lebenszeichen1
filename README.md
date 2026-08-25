@@ -142,6 +142,12 @@ npm run create-admin -- --email you@example.com --name "Your Name" --role OWNER
 ```
 
 The password is always read from stdin so it never lands in shell history.
+Running it with an existing email **resets that account's password** — useful if
+someone is locked out.
+
+Logged-in users change their own password at **`/admin/account`**, which also
+shows their recent audit entries and active session count. Changing a password
+revokes every session for that user, including the current one.
 
 Roles: `OWNER` > `ADMIN` > `EDITOR`.
 - `EDITOR` — write, import, generate, publish
@@ -186,7 +192,7 @@ Full instructions, including the nginx/PM2 setup used on the current server:
 ## 13. Before going live — checklist
 
 - [ ] `AUTH_SECRET` generated (48+ random bytes), not the dev value
-- [ ] Seed admin password changed
+- [ ] Seed admin password changed (`/admin/account`)
 - [ ] Legal details filled in at `/admin/settings → Rekizity` (required by § 5 DDG)
 - [ ] `NEXT_PUBLIC_SITE_URL` set to the real https domain
 - [ ] `/datenschutz` reviewed by someone qualified
