@@ -52,13 +52,13 @@ export function evaluateQuality(input: QualityInput): QualityReport {
     checks.push({ id, label, level, hint })
 
   // --- Заголовок
+  // No upper bound. Long, emotional headlines are the house style for this
+  // genre, the H1 is never truncated, and the SEO title is a separate field
+  // that can be shortened on its own.
   const titleLen = input.title.trim().length
   if (!titleLen) push('title', 'Заголовок не заполнен', 'blocking')
-  else if (titleLen > 90)
-    push('title', `Заголовок слишком длинный (${titleLen} симв.)`, 'warn', 'Оптимум — до 70 символов.')
-  else if (titleLen < 20)
-    push('title', `Заголовок очень короткий (${titleLen} симв.)`, 'warn')
-  else push('title', 'Заголовок в порядке', 'ok')
+  else if (titleLen < 20) push('title', `Заголовок очень короткий (${titleLen} симв.)`, 'warn')
+  else push('title', `Заголовок: ${titleLen} симв.`, 'ok')
 
   // --- Анонс
   // Not blocking: an empty field falls back to the first paragraph on save, so
@@ -112,12 +112,23 @@ export function evaluateQuality(input: QualityInput): QualityReport {
   const meta = input.metaDescription?.trim() ?? ''
   if (!meta) push('meta', 'Нет meta description', 'blocking')
   else if (meta.length < 100 || meta.length > 165)
-    push('meta', `Meta description ${meta.length} симв.`, 'warn', 'Оптимум — 140–158 символов.')
+    push(
+      'meta',
+      `Meta description ${meta.length} симв.`,
+      'warn',
+      'Google показывает примерно 158 — короче 100 выглядит пусто, длиннее обрежется.',
+    )
   else push('meta', 'Meta description в порядке', 'ok')
 
   const seoTitle = input.seoTitle?.trim() ?? ''
-  if (seoTitle && seoTitle.length > 65)
-    push('seo-title', `SEO-заголовок длинный (${seoTitle.length} симв.)`, 'warn')
+  if (seoTitle && seoTitle.length > 65) {
+    push(
+      'seo-title',
+      `SEO-заголовок ${seoTitle.length} симв.`,
+      'warn',
+      'Google показывает примерно 60 — остальное обрежется в выдаче.',
+    )
+  }
 
   // --- Происхождение
   if (input.aiUsed && !input.sourceUrl)

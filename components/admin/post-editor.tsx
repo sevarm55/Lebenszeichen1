@@ -460,7 +460,7 @@ export function PostEditor({
                   <Languages className="h-4 w-4" />
                 </Button>
               </div>
-              <CharCount value={title.length} ideal={[30, 70]} />
+              <CharCount value={title.length} />
             </Field>
 
             {duplicates.length > 0 && (
@@ -483,17 +483,6 @@ export function PostEditor({
                 </ul>
               </div>
             )}
-
-            <Field label="Обложка" required>
-              <HeroImageField
-                value={hero}
-                onChange={(image) =>
-                  setHero(image ? { mediaId: image.mediaId, url: image.url, alt: image.alt } : null)
-                }
-                promptSeed={title}
-                candidates={imageCandidates}
-              />
-            </Field>
 
             <Field label="Теги">
               <div className="mb-2 flex flex-wrap gap-1.5">
@@ -590,7 +579,7 @@ export function PostEditor({
                       </Button>
                     </div>
                     {excerpt.trim() ? (
-                      <CharCount value={excerpt.length} ideal={[80, 220]} />
+                      <CharCount value={excerpt.length} />
                     ) : (
                       <p className="mt-1 text-xs text-[var(--color-muted)]">
                         Пусто — будет взят первый абзац: «{derivedExcerpt || '…'}»
@@ -656,7 +645,7 @@ export function PostEditor({
           <div className="space-y-4">
             <Field label="SEO-заголовок" htmlFor="seoTitle">
               <Input id="seoTitle" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} />
-              <CharCount value={seoTitle.length} ideal={[30, 60]} />
+              <CharCount value={seoTitle.length} cutoff={60} cutoffLabel="в выдаче Google обрезается примерно после 60" />
             </Field>
 
             <Field label="Meta description" htmlFor="metaDescription">
@@ -666,7 +655,7 @@ export function PostEditor({
                 onChange={(e) => setMetaDescription(e.target.value)}
                 rows={2}
               />
-              <CharCount value={metaDescription.length} ideal={[140, 158]} />
+              <CharCount value={metaDescription.length} cutoff={158} cutoffLabel="в выдаче Google обрезается примерно после 158" />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -727,23 +716,9 @@ export function PostEditor({
       </div>
 
       {/* -------------------------------------------------- sidebar ----- */}
-      <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-        <Panel
-          title="Рубрики"
-          badge={`${1 + extraCategoryIds.length}`}
-          tone={categoryId ? 'default' : 'warning'}
-        >
-          <CategoryPicker
-            categories={categories}
-            primaryId={categoryId}
-            extraIds={extraCategoryIds}
-            onChange={(primary, extra) => {
-              setCategoryId(primary)
-              setExtraCategoryIds(extra)
-            }}
-          />
-        </Panel>
-
+      <aside
+        className="space-y-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain xl:pr-1"
+      >
         <Panel title="Публикация">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-1.5">
@@ -863,6 +838,33 @@ export function PostEditor({
           </ul>
         </Panel>
 
+        <Panel
+          title="Рубрики"
+          badge={`${1 + extraCategoryIds.length}`}
+          tone={categoryId ? 'default' : 'warning'}
+        >
+          <CategoryPicker
+            categories={categories}
+            primaryId={categoryId}
+            extraIds={extraCategoryIds}
+            onChange={(primary, extra) => {
+              setCategoryId(primary)
+              setExtraCategoryIds(extra)
+            }}
+          />
+        </Panel>
+
+        <Panel title="Обложка" tone={hero ? 'default' : 'warning'} badge={hero ? undefined : 'нужна'}>
+          <HeroImageField
+            value={hero}
+            onChange={(image) =>
+              setHero(image ? { mediaId: image.mediaId, url: image.url, alt: image.alt } : null)
+            }
+            promptSeed={title}
+            candidates={imageCandidates}
+          />
+        </Panel>
+
         {initial.aiUsed && (
           <Panel title="Происхождение">
             <dl className="space-y-1 text-xs">
@@ -937,17 +939,33 @@ function Field({
   )
 }
 
-function CharCount({ value, ideal }: { value: number; ideal: [number, number] }) {
-  const [min, max] = ideal
-  const ok = value >= min && value <= max
+/**
+ * Character count.
+ *
+ * Informational, never a limit — nothing here prevents saving. A `cutoff` is
+ * only given where an external system really truncates (Google's result
+ * snippet), and even then it just says so rather than calling the text wrong.
+ */
+function CharCount({
+  value,
+  cutoff,
+  cutoffLabel,
+}: {
+  value: number
+  cutoff?: number
+  cutoffLabel?: string
+}) {
+  const over = cutoff !== undefined && value > cutoff
+
   return (
     <p
       className={cn(
         'mt-1 text-xs tabular-nums',
-        value === 0 ? 'text-[var(--color-muted-soft)]' : ok ? 'text-emerald-700' : 'text-amber-700',
+        over ? 'text-amber-700' : 'text-[var(--color-muted-soft)]',
       )}
     >
-      {value} симв. · оптимум {min}–{max}
+      {value} симв.
+      {cutoffLabel && ` · ${cutoffLabel}`}
     </p>
   )
 }

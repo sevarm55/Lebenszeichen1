@@ -9,12 +9,14 @@ import { z } from 'zod'
  */
 
 export const postSchema = z.object({
-  title: z.string().min(1, 'Заголовок обязателен').max(300),
+  // Generous ceilings: these exist to stop an abusive payload, not to shape
+  // editorial choices. Nothing in the UI enforces a length.
+  title: z.string().min(1, 'Заголовок обязателен').max(500),
   // Kept optional for older payloads; the editor no longer sends it and the
   // public article no longer renders it.
   subtitle: z.string().max(400).optional().default(''),
   slug: z.string().max(120).optional().default(''),
-  excerpt: z.string().max(600).optional().default(''),
+  excerpt: z.string().max(1000).optional().default(''),
   document: z.unknown(),
   status: z.enum([
     'DRAFT',
@@ -33,8 +35,8 @@ export const postSchema = z.object({
   authorId: z.string().nullable().optional(),
   heroImageId: z.string().nullable().optional(),
   ogImageId: z.string().nullable().optional(),
-  seoTitle: z.string().max(200).optional().default(''),
-  metaDescription: z.string().max(400).optional().default(''),
+  seoTitle: z.string().max(300).optional().default(''),
+  metaDescription: z.string().max(600).optional().default(''),
   canonicalUrl: z.string().max(500).optional().default(''),
   ogTitle: z.string().max(200).optional().default(''),
   ogDescription: z.string().max(400).optional().default(''),
@@ -55,8 +57,8 @@ export const categorySchema = z.object({
   slug: z.string().max(80).optional(),
   description: z.string().max(600).optional().default(''),
   intro: z.string().max(1000).optional().default(''),
-  seoTitle: z.string().max(200).optional().default(''),
-  metaDescription: z.string().max(400).optional().default(''),
+  seoTitle: z.string().max(300).optional().default(''),
+  metaDescription: z.string().max(600).optional().default(''),
   imageId: z.string().nullable().optional(),
   order: z.number().int().min(0).max(999).optional(),
   enabled: z.boolean().optional(),

@@ -38,8 +38,13 @@ Left column:
 shown; if it is not configured you get an explanation, not a dead button.
 
 **Основные поля** — title (with per-field rewrite and a live duplicate check on
-blur), cover, tags, and the `featured` / `editor's pick` switches. Character
-counters show the optimal range rather than a hard limit.
+blur), tags, and the `featured` / `editor's pick` switches.
+
+**No field enforces a length.** Character counts are shown for information only,
+and a limit is named just where an external system actually truncates: Google
+cuts the SEO title around 60 characters and the meta description around 158.
+The article headline itself carries no upper bound — long, emotional headlines
+are the house style for this genre and the H1 is never truncated.
 
 **Дополнительно** — a disclosure, collapsed by default, holding excerpt, slug and
 author. None of the three needs attention on a normal post:
@@ -59,6 +64,9 @@ There is no subtitle field — the public article does not render one.
 social headline, canonical URL, and — for imported posts — a public source note.
 
 Right column, sticky:
+
+**Обложка** — the media picker, in the sidebar next to the publish controls
+where it is actually needed. The panel turns amber while no cover is set.
 
 **Рубрики** — checkbox list, several may be selected. The starred one is
 primary: it owns the article URL and the breadcrumb, and clicking another star
@@ -86,6 +94,10 @@ formatting is visible — nothing is edited as a marker in a text field.
 Toolbar: bold, italic, link, H2, H3, bulleted and numbered list, image, quote,
 callout, divider, explicit ad marker, undo/redo. Keyboard shortcuts work as
 expected (Ctrl/Cmd+B, +I, +Z).
+
+The body scrolls **inside its own frame** rather than growing the page. A long
+article otherwise pushes the document past 8000px and puts the toolbar and the
+sidebar out of reach.
 
 Editorial node types carry the metadata the CMS needs, edited in place:
 

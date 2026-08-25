@@ -61,11 +61,10 @@ Deliberately not a score out of 100 — that is theatre. Two states only:
 - no meta description
 
 **Warnings** (publish allowed):
-- headline over 90 characters
 - article under 250 words
 - long article with no H2s
 - images without alt text
-- meta description outside 140–158 characters
+- SEO title or meta description past the point Google truncates
 - AI used but no source recorded
 
 ## Duplicate protection

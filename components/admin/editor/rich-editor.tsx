@@ -102,7 +102,7 @@ export function RichEditor({
     editorProps: {
       attributes: {
         class:
-          'prose-editor min-h-[30rem] w-full px-4 py-4 focus:outline-none font-serif text-[1.0625rem] leading-[1.75] text-[var(--color-text)]',
+          'prose-editor min-h-[24rem] w-full px-4 py-4 focus:outline-none font-serif text-[1.0625rem] leading-[1.75] text-[var(--color-text)]',
       },
     },
   })
@@ -165,7 +165,7 @@ export function RichEditor({
   }, [editor])
 
   if (!editor) {
-    return <div className="skeleton h-[30rem] w-full rounded-sm" />
+    return <div className="skeleton h-[28rem] w-full rounded-sm" />
   }
 
   return (
@@ -177,7 +177,9 @@ export function RichEditor({
         onLink={setLink}
       />
 
-      <EditorContent editor={editor} />
+      <div className="max-h-[calc(100vh-15rem)] min-h-[24rem] overflow-y-auto overscroll-contain">
+        <EditorContent editor={editor} />
+      </div>
 
       <MediaPicker
         open={pickerOpen}
@@ -204,7 +206,7 @@ function Toolbar({
   const chain = () => editor.chain().focus()
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1.5">
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1.5">
       <Tool icon={Bold} label="Жирный (Ctrl+B)" active={editor.isActive('bold')} disabled={disabled} onClick={() => chain().toggleBold().run()} />
       <Tool icon={Italic} label="Курсив (Ctrl+I)" active={editor.isActive('italic')} disabled={disabled} onClick={() => chain().toggleItalic().run()} />
       <Tool icon={Link2} label="Ссылка" active={editor.isActive('link')} disabled={disabled} onClick={onLink} />
