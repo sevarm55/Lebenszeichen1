@@ -38,9 +38,14 @@ Left column:
 shown; if it is not configured you get an explanation, not a dead button.
 
 **Основные поля** — title (with per-field rewrite and a live duplicate check on
-blur), subtitle, slug, category, author, cover, excerpt, tags, and the
-`featured` / `editor's pick` switches. Character counters show the optimal range
-rather than a hard limit.
+blur), cover, excerpt, tags, and the `featured` / `editor's pick` switches.
+Character counters show the optimal range rather than a hard limit.
+
+Slug and author sit behind a **Дополнительно** disclosure, collapsed by default:
+the slug is generated from the title and the author rarely changes, so neither
+belongs in the daily path. The collapsed row still shows the current slug.
+
+There is no subtitle field — the public article does not render one.
 
 **Текст материала** — the block editor (below).
 
@@ -48,6 +53,12 @@ rather than a hard limit.
 social headline, canonical URL, and — for imported posts — a public source note.
 
 Right column, sticky:
+
+**Рубрики** — checkbox list, several may be selected. The starred one is
+primary: it owns the article URL and the breadcrumb, and clicking another star
+promotes it. Secondary rubrics list the article too, but requesting the article
+under one of them redirects to the canonical URL, so a story never lives at two
+addresses.
 
 **Публикация** — Черновик / На проверку / Опубликовать / По расписанию, with
 quick presets (+1 h, +3 h, tomorrow 09:00). Publish is refused while blocking
@@ -60,55 +71,39 @@ checklist items remain.
 
 Below: **История версий** — the last 10 revisions, restorable.
 
-## The body editor — two modes
+## The body editor
 
-Content is stored as blocks either way. The two modes only change how it is
-*typed*, and the toggle sits in the panel header.
+TipTap (ProseMirror). An image is an image, a pull quote is a pull quote,
+formatting is visible — nothing is edited as a marker in a text field.
 
-### Текст (default)
+Toolbar: bold, italic, link, H2, H3, bulleted and numbered list, image, quote,
+callout, divider, explicit ad marker, undo/redo. Keyboard shortcuts work as
+expected (Ctrl/Cmd+B, +I, +Z).
 
-One large text area, the way a writer expects. After an import a 1900-word
-article would otherwise become 60 separate boxes with 60 checkboxes, which is
-unusable — so this is the default.
+Editorial node types carry the metadata the CMS needs, edited in place:
 
-| You type | You get |
+| Node | Inline fields |
 |---|---|
-| plain text, blank line between | paragraphs |
-| `## Überschrift` | H2 |
-| `### Unter` | H3 |
-| `> Zitat` (+ a `— Name` line) | quote with attribution |
-| `- Punkt` / `1. Punkt` | bulleted / numbered list |
-| `---` | divider |
-| `!!! Titel \| Text` | callout |
-| `[[block:1]]` | an image/gallery/embed placed earlier |
+| Image | alt (highlighted amber while empty), caption, credit, aspect ratio 16:9 / 4:3 / 1:1, delete |
+| Quote | attribution line |
+| Callout | title, variant (context / info / warning) |
+| Gallery, video, ad marker | shown as labelled cards |
 
-Inline: `**bold**`, `*italic*`, `[label](https://url)`.
+Links accept only `http(s)`; anything else is refused with a message.
 
-A toolbar inserts the syntax at the caret, and an image button opens the media
-picker — the image becomes a real block and its `[[block:N]]` token marks the
-position. A legend under the field says what each token is, so the markers are
-never cryptic. Deleting a token deletes the block; leaving it alone preserves
-the media id, alt text, caption, credit and aspect ratio through any number of
-edits.
+### Storage
 
-The lead-paragraph flag is one checkbox in the toolbar, not one per paragraph.
+Content is stored as the block array, not as ProseMirror JSON and never as HTML.
+Two reasons that do not bend: the ad engine reasons about word counts and
+section boundaries per block, and imported third-party markup must never become
+stored markup. `server/domain/tiptap.ts` converts both ways; inline marks map to
+the same closed `**bold**` / `*italic*` / `[label](url)` subset the public
+renderer understands, so a paste from Word cannot smuggle markup onto the site.
 
-Conversion runs on every keystroke and is verified lossless — all 18 seeded
-articles survive three full round trips with identical block types and word
-counts (`npx tsx scripts/prose-roundtrip-check.ts`).
-
-### Блоки
-
-The granular view: every block in its own box with drag-to-reorder, move
-up/down, per-block AI rewrite and delete. Use it to place an image precisely,
-edit a callout, or reorder sections. Types: paragraph (lead flag on the first
-one only), H2, H3, image, quote, callout, list, divider, explicit ad marker.
-
-### Why blocks at all
-
-HTML is never accepted or stored. That is the single strongest XSS control in
-the codebase, and it is also what lets the ad engine reason about word counts
-and section boundaries.
+Round-trip fidelity is checked by `scripts/editor-roundtrip-check.ts` — all 18
+seeded articles survive three full conversions with identical block types and
+word counts, and image media ids, captions, credits, ratios, quote attributions
+and callout variants all survive.
 
 ## Preview `/admin/vorschau/[id]`
 

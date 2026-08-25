@@ -24,6 +24,8 @@ export interface PostInput {
   origin?: PostOrigin
   language?: string
   categoryId: string
+  /** Additional rubrics the article also appears under. */
+  extraCategoryIds?: string[]
   authorId?: string | null
   heroImageId?: string | null
   ogImageId?: string | null
@@ -66,6 +68,30 @@ export async function uniqueSlug(
     candidate = `${base}-${counter}`
     counter += 1
     if (counter > 200) return `${base}-${Date.now().toString(36)}`
+  }
+}
+
+
+/**
+ * Rewrites the secondary-category rows.
+ *
+ * The primary category is filtered out — it lives on `Post.categoryId` and
+ * duplicating it here would make every category listing return the article
+ * twice.
+ */
+async function syncExtraCategories(
+  postId: string,
+  primaryId: string,
+  extraIds: string[] | undefined,
+) {
+  if (!extraIds) return
+  const clean = Array.from(new Set(extraIds.filter((id) => id && id !== primaryId)))
+  await prisma.postCategory.deleteMany({ where: { postId } })
+  if (clean.length) {
+    await prisma.postCategory.createMany({
+      data: clean.map((categoryId) => ({ postId, categoryId })),
+      skipDuplicates: true,
+    })
   }
 }
 
@@ -159,6 +185,7 @@ export async function createPost(input: PostInput, userId: string) {
     })
   }
 
+  await syncExtraCategories(post.id, post.categoryId, input.extraCategoryIds)
   await snapshotRevision(post.id, userId, 'Erstellt')
   await linkSource(siteId, post.id, input.sourceUrl)
   await audit({
@@ -254,6 +281,7 @@ export async function updatePost(id: string, input: PostInput, userId: string) {
     }
   }
 
+  await syncExtraCategories(id, post.categoryId, input.extraCategoryIds)
   await linkSource(siteId, id, input.sourceUrl)
   await audit({
     action: input.status === 'PUBLISHED' ? 'POST_PUBLISH' : 'POST_UPDATE',
@@ -263,6 +291,7 @@ export async function updatePost(id: string, input: PostInput, userId: string) {
     detail: `${post.title} → ${input.status}`,
   })
   await revalidatePost(post.category.slug, post.slug, existing.category.slug, existing.slug)
+  await revalidateExtraCategories(id)
   return post
 }
 
@@ -424,6 +453,19 @@ export async function restoreRevision(revisionId: string, userId: string) {
   })
   await revalidatePost(post.category.slug, post.slug)
   return post
+}
+
+/** Secondary rubrics also list the article, so their pages must be refreshed. */
+async function revalidateExtraCategories(postId: string) {
+  try {
+    const rows = await prisma.postCategory.findMany({
+      where: { postId },
+      select: { category: { select: { slug: true } } },
+    })
+    for (const row of rows) revalidatePath(`/kategorie/${row.category.slug}`)
+  } catch {
+    // Outside a request scope (seed script) — nothing to revalidate.
+  }
 }
 
 function safeDomain(url: string): string | null {

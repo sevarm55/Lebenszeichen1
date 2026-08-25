@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export default async function NewPostPage() {
   const user = await requireUser()
   const settings = await getSettings()
-  const { categories, authors, popularTags } = await loadEditorOptions()
+  const { categories, authors } = await loadEditorOptions()
 
   if (categories.length === 0) redirect('/admin/categories?empty=1')
 
@@ -35,7 +35,6 @@ export default async function NewPostPage() {
         initial={emptyInitial(categories[0]!.id)}
         categories={categories}
         authors={authors}
-        popularTags={popularTags}
         aiProvider={{
           id: provider.info.id,
           label: provider.info.label,

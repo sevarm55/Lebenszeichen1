@@ -139,12 +139,10 @@ Inline emphasis is a closed subset: `**bold**`, `*italic*`,
 `[label](https://url)`, rendered by `components/public/rich-text.tsx` into real
 React elements.
 
-`server/domain/prose.ts` converts between that block array and one plain-text
-document, which is what the editor's default "Текст" mode edits. Blocks that
-have no text form (image, gallery, embed, ad) are preserved *by reference*
-through a `[[block:N]]` token, so prose editing can never silently destroy an
-image an editor placed. Round-trip fidelity is checked by
-`scripts/prose-roundtrip-check.ts`. There is no `dangerouslySetInnerHTML` anywhere in the article
+`server/domain/tiptap.ts` converts between that block array and the ProseMirror
+document the editor works on, so images, links and formatting render as
+themselves while storage stays on blocks. Round-trip fidelity is checked by
+`scripts/editor-roundtrip-check.ts`. There is no `dangerouslySetInnerHTML` anywhere in the article
 path, and `safeHref` drops anything that is not http(s).
 
 ## Ads

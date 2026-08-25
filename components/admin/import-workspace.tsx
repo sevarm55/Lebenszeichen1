@@ -65,7 +65,6 @@ interface ImportWorkspaceProps {
   categories: PostEditorCategory[]
   authors: PostEditorAuthor[]
   aiProvider: { id: string; label: string; ready: boolean; readyHint?: string }
-  popularTags?: string[]
 }
 
 type Stage = 'url' | 'source' | 'editor'
@@ -77,7 +76,7 @@ type Stage = 'url' | 'source' | 'editor'
  * published page without a human editing the result. Generation always lands in
  * the editor as a draft.
  */
-export function ImportWorkspace({ categories, authors, aiProvider, popularTags }: ImportWorkspaceProps) {
+export function ImportWorkspace({ categories, authors, aiProvider }: ImportWorkspaceProps) {
   const [stage, setStage] = useState<Stage>('url')
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState('')
@@ -204,13 +203,13 @@ export function ImportWorkspace({ categories, authors, aiProvider, popularTags }
         <PostEditor
           initial={{
             title: base.title,
-            subtitle: base.subtitle,
             slug: slugify(base.title),
             excerpt: base.excerpt,
             document: base.document,
             status: 'DRAFT',
             language: languageCode,
             categoryId: matchedCategory,
+            extraCategoryIds: [],
             authorId: null,
             hero: null,
             seoTitle: base.seoTitle,
@@ -233,7 +232,6 @@ export function ImportWorkspace({ categories, authors, aiProvider, popularTags }
           categories={categories}
           authors={authors}
           aiProvider={aiProvider}
-          popularTags={popularTags}
           imageCandidates={source.images.map((image) => ({ url: image.url, alt: image.alt }))}
         />
       </div>

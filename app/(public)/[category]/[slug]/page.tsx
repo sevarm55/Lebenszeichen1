@@ -183,12 +183,6 @@ export default async function ArticlePage({ params }: PageProps) {
                   {post.title}
                 </h1>
 
-                {post.subtitle && (
-                  <p className="mt-4 font-serif text-lg leading-snug text-[var(--color-muted)] sm:text-xl">
-                    {post.subtitle}
-                  </p>
-                )}
-
                 <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--color-border)] pt-4 text-[0.8125rem] text-[var(--color-muted)]">
                   {post.author && (
                     <span className="text-[var(--color-text-soft)]">

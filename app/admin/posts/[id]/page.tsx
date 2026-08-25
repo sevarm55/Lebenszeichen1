@@ -60,7 +60,6 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
         initial={initial}
         categories={options.categories}
         authors={options.authors}
-        popularTags={options.popularTags}
         aiProvider={{
           id: provider.info.id,
           label: provider.info.label,

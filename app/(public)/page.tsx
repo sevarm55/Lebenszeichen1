@@ -21,7 +21,7 @@ import {
 } from '@/server/services/posts'
 import { getAllCategories, getSettings } from '@/server/services/site'
 import { prisma } from '@/lib/prisma'
-import { publishedWhere } from '@/server/services/posts'
+import { inCategory, publishedWhere } from '@/server/services/posts'
 import { getSiteId } from '@/server/services/site'
 
 export const revalidate = 300
@@ -44,7 +44,11 @@ async function getCategorySections(excludeIds: string[]) {
   const sections = await Promise.all(
     categories.slice(0, 4).map(async (category) => {
       const posts = await prisma.post.findMany({
-        where: { ...publishedWhere(siteId), categoryId: category.id, id: { notIn: excludeIds } },
+        where: {
+          ...publishedWhere(siteId),
+          ...inCategory(category.id),
+          id: { notIn: excludeIds },
+        },
         select: {
           id: true,
           title: true,

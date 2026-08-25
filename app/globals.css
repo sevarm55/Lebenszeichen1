@@ -255,3 +255,76 @@
   font-family: var(--font-sans);
   letter-spacing: -0.01em;
 }
+
+/* ==========================================================================
+   Rich editor (TipTap)
+   --------------------------------------------------------------------------
+   The editing surface mirrors the published article closely enough that an
+   editor can judge rhythm and length while writing, without pretending to be a
+   pixel-perfect preview — that is what /admin/vorschau is for.
+   ========================================================================== */
+
+.prose-editor :is(h2, h3) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--color-text);
+}
+
+.prose-editor h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.prose-editor h3 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  margin: 1.375rem 0 0.5rem;
+}
+
+.prose-editor p {
+  margin: 0 0 1rem;
+}
+
+.prose-editor p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-editor :is(ul, ol) {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+
+.prose-editor ul { list-style: disc; }
+.prose-editor ol { list-style: decimal; }
+.prose-editor li { margin-bottom: 0.375rem; }
+.prose-editor li > p { margin: 0; }
+
+.prose-editor a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: 3px;
+}
+
+.prose-editor hr {
+  margin: 1.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-strong);
+}
+
+/* Placeholder on the first empty paragraph only. */
+.prose-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-family: var(--font-sans);
+  color: var(--color-muted-soft);
+}
+
+/* Selected atom nodes (image, ad marker, gallery) */
+.prose-editor .ProseMirror-selectednode {
+  outline: none;
+}

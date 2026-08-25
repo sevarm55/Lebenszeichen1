@@ -75,11 +75,6 @@ export default async function PreviewPage({
             <h1 className="mt-3 font-serif text-[2rem] font-semibold leading-[1.12] tracking-[-0.02em] sm:text-[2.5rem] lg:text-[3rem]">
               {post.title || '(без заголовка)'}
             </h1>
-            {post.subtitle && (
-              <p className="mt-4 font-serif text-lg leading-snug text-[var(--color-muted)] sm:text-xl">
-                {post.subtitle}
-              </p>
-            )}
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[var(--color-border)] pt-4 text-[0.8125rem] text-[var(--color-muted)]">
               {post.author && <span>Von {post.author.name}</span>}
               <span>{formatDateDe(post.publishedAt ?? post.updatedAt, { withTime: true })}</span>

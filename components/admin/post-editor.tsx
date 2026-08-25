@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
   ExternalLink,
   Hash,
   Languages,
@@ -14,9 +15,9 @@ import {
   X,
 } from 'lucide-react'
 
-import { BlockEditor } from '@/components/admin/block-editor'
-import { ProseEditor } from '@/components/admin/prose-editor'
-import { HeroImageField, MediaPicker, type PickedImage } from '@/components/admin/media-picker'
+import { CategoryPicker } from '@/components/admin/category-picker'
+import { RichEditor } from '@/components/admin/editor/rich-editor'
+import { HeroImageField } from '@/components/admin/media-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,13 +46,13 @@ export interface PostEditorAuthor {
 export interface PostEditorInitial {
   id?: string
   title: string
-  subtitle: string
   slug: string
   excerpt: string
   document: ArticleDocument
   status: string
   language: string
   categoryId: string
+  extraCategoryIds?: string[]
   authorId: string | null
   hero: { mediaId: string; url: string; alt: string } | null
   seoTitle: string
@@ -78,8 +79,6 @@ interface PostEditorProps {
   categories: PostEditorCategory[]
   authors: PostEditorAuthor[]
   aiProvider: { id: string; label: string; ready: boolean; readyHint?: string }
-  /** Existing tag vocabulary, offered as one-click chips. */
-  popularTags?: string[]
   /** Image candidates carried over from a URL import. */
   imageCandidates?: { url: string; alt: string }[]
 }
@@ -91,18 +90,20 @@ export function PostEditor({
   categories,
   authors,
   aiProvider,
-  popularTags = [],
   imageCandidates,
 }: PostEditorProps) {
   const router = useRouter()
 
   const [title, setTitle] = useState(initial.title)
-  const [subtitle, setSubtitle] = useState(initial.subtitle)
   const [slug, setSlug] = useState(initial.slug)
   const [autoSlug, setAutoSlug] = useState(!initial.id)
   const [excerpt, setExcerpt] = useState(initial.excerpt)
   const [document, setDocument] = useState<ArticleDocument>(initial.document)
   const [categoryId, setCategoryId] = useState(initial.categoryId)
+  const [extraCategoryIds, setExtraCategoryIds] = useState<string[]>(initial.extraCategoryIds ?? [])
+  // Slug and author are derived or set once; they only get in the way of the
+  // daily job, so they live behind a disclosure.
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [authorId, setAuthorId] = useState(initial.authorId ?? '')
   const [hero, setHero] = useState(initial.hero)
   const [tags, setTags] = useState<string[]>(initial.tags)
@@ -131,15 +132,10 @@ export function PostEditor({
     initial.scheduledAt ? formatDateTimeInput(new Date(initial.scheduledAt)) : '',
   )
 
-  // Prose is the default: after an import a long article becomes dozens of
-  // separate boxes, and nobody wants to edit that. Blocks stay one click away
-  // for precise placement of images, callouts and galleries.
-  const [bodyMode, setBodyMode] = useState<'prose' | 'blocks'>('prose')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [headlines, setHeadlines] = useState<string[]>([])
-  const [inlinePicker, setInlinePicker] = useState<null | ((image: PickedImage | null) => void)>(null)
   const [duplicates, setDuplicates] = useState<{ id: string; title: string; slug: string }[]>([])
 
   const wordCount = useMemo(() => documentWordCount(document), [document])
@@ -148,7 +144,6 @@ export function PostEditor({
     () =>
       evaluateQuality({
         title,
-        subtitle,
         excerpt,
         document,
         categoryId,
@@ -159,7 +154,7 @@ export function PostEditor({
         sourceUrl: initial.sourceUrl,
         aiUsed: initial.aiUsed,
       }),
-    [title, subtitle, excerpt, document, categoryId, hero, metaDescription, seoTitle, initial],
+    [title, excerpt, document, categoryId, hero, metaDescription, seoTitle, initial],
   )
 
   const updateTitle = (value: string) => {
@@ -210,12 +205,6 @@ export function PostEditor({
           setTitle(r.result.text)
           if (autoSlug) setSlug(slugify(r.result.text))
         }
-      }
-      if (subtitle.trim()) {
-        const r = await apiFetch<{ result: { text: string } }>('/api/admin/ai', {
-          json: { task: 'rewrite', text: subtitle, language, kind: 'excerpt' },
-        })
-        if (r.result?.text) setSubtitle(r.result.text)
       }
       if (excerpt.trim()) {
         const r = await apiFetch<{ result: { text: string } }>('/api/admin/ai', {
@@ -275,27 +264,6 @@ export function PostEditor({
     if (result?.headlines) setHeadlines(result.headlines)
   }
 
-  const rewriteBlock = useCallback(
-    async (text: string) => {
-      const data = await apiFetch<{ result: { text: string } }>('/api/admin/ai', {
-        json: { task: 'rewrite', text, language, kind: 'paragraph' },
-      })
-      return data.result?.text ?? text
-    },
-    [language],
-  )
-
-  const pickInlineImage = useCallback(
-    () =>
-      new Promise<{ url: string; alt: string; mediaId?: string } | null>((resolve) => {
-        setInlinePicker(() => (image: PickedImage | null) => {
-          setInlinePicker(null)
-          resolve(image)
-        })
-      }),
-    [],
-  )
-
   // ---------------------------------------------------------- saving ----
   const statusFor = (mode: PublishMode): string => {
     switch (mode) {
@@ -329,7 +297,6 @@ export function PostEditor({
 
     const payload = {
       title,
-      subtitle,
       slug: slug || slugify(title),
       excerpt,
       document,
@@ -337,6 +304,7 @@ export function PostEditor({
       origin: initial.origin ?? (initial.sourceUrl ? 'URL_IMPORT' : 'MANUAL'),
       language: languageCode,
       categoryId,
+      extraCategoryIds,
       authorId: authorId || null,
       heroImageId: hero?.mediaId ?? null,
       seoTitle,
@@ -508,83 +476,16 @@ export function PostEditor({
               </div>
             )}
 
-            <Field label="Подзаголовок / лид" htmlFor="subtitle">
-              <div className="flex gap-2">
-                <Input id="subtitle" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  loading={busy === 'subtitle'}
-                  onClick={() => rewriteField('subtitle', subtitle, 'excerpt', setSubtitle)}
-                >
-                  <Languages className="h-4 w-4" />
-                </Button>
-              </div>
+            <Field label="Обложка" required>
+              <HeroImageField
+                value={hero}
+                onChange={(image) =>
+                  setHero(image ? { mediaId: image.mediaId, url: image.url, alt: image.alt } : null)
+                }
+                promptSeed={title}
+                candidates={imageCandidates}
+              />
             </Field>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Адрес (slug)" htmlFor="slug" required>
-                <Input
-                  id="slug"
-                  value={slug}
-                  onChange={(e) => {
-                    setSlug(e.target.value)
-                    setAutoSlug(false)
-                  }}
-                />
-                {initial.status === 'PUBLISHED' && slug !== initial.slug && (
-                  <p className="mt-1 text-xs text-amber-700">
-                    Адрес изменится — со старого будет создан 301-редирект.
-                  </p>
-                )}
-              </Field>
-
-              <Field label="Категория" htmlFor="category" required>
-                <select
-                  id="category"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="h-9 w-full rounded-sm border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2 text-sm"
-                >
-                  <option value="">— выберите —</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Автор / редактор" htmlFor="author">
-                <select
-                  id="author"
-                  value={authorId}
-                  onChange={(e) => setAuthorId(e.target.value)}
-                  className="h-9 w-full rounded-sm border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2 text-sm"
-                >
-                  <option value="">— без автора —</option>
-                  {authors.map((author) => (
-                    <option key={author.id} value={author.id}>
-                      {author.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="Обложка" required>
-                <HeroImageField
-                  value={hero}
-                  onChange={(image) =>
-                    setHero(image ? { mediaId: image.mediaId, url: image.url, alt: image.alt } : null)
-                  }
-                  promptSeed={title}
-                  candidates={imageCandidates}
-                />
-              </Field>
-            </div>
 
             <Field label="Краткое описание (анонс)" htmlFor="excerpt" required>
               <div className="flex gap-2">
@@ -640,28 +541,6 @@ export function PostEditor({
                 placeholder="Введите тег и нажмите Enter"
               />
 
-              {popularTags.filter((t) => !tags.includes(t)).length > 0 && (
-                <div className="mt-2">
-                  <p className="mb-1.5 text-xs text-[var(--color-muted)]">
-                    Часто используемые — нажмите, чтобы добавить:
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {popularTags
-                      .filter((t) => !tags.includes(t))
-                      .slice(0, 18)
-                      .map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => setTags([...tags, tag])}
-                          className="rounded-sm border border-[var(--color-border-strong)] px-1.5 py-0.5 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-                        >
-                          + {tag}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
             </Field>
 
             <div className="flex flex-wrap gap-4 border-t border-[var(--color-border)] pt-3">
@@ -678,55 +557,78 @@ export function PostEditor({
                 Выбор редакции
               </label>
             </div>
+
+            {/* Slug is generated from the title and the author rarely changes —
+                both are here for the rare case, not in the daily path. */}
+            <div className="border-t border-[var(--color-border)] pt-3">
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen(!advancedOpen)}
+                aria-expanded={advancedOpen}
+                className="flex w-full items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              >
+                <ChevronDown
+                  className={cn('h-3.5 w-3.5 transition-transform', advancedOpen && 'rotate-180')}
+                />
+                Дополнительно — адрес и автор
+                {!advancedOpen && (
+                  <span className="ml-1 truncate text-xs text-[var(--color-muted-soft)]">
+                    /{slug || slugify(title) || '…'}
+                  </span>
+                )}
+              </button>
+
+              {advancedOpen && (
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <Field label="Адрес (slug)" htmlFor="slug">
+                    <Input
+                      id="slug"
+                      value={slug}
+                      onChange={(e) => {
+                        setSlug(e.target.value)
+                        setAutoSlug(false)
+                      }}
+                    />
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">
+                      {autoSlug ? 'Формируется из заголовка автоматически.' : 'Задан вручную.'}
+                    </p>
+                    {initial.status === 'PUBLISHED' && slug !== initial.slug && (
+                      <p className="mt-1 text-xs text-amber-700">
+                        Адрес изменится — со старого будет создан 301-редирект.
+                      </p>
+                    )}
+                  </Field>
+
+                  <Field label="Автор / редактор" htmlFor="author">
+                    <select
+                      id="author"
+                      value={authorId}
+                      onChange={(e) => setAuthorId(e.target.value)}
+                      className="h-9 w-full rounded-sm border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2 text-sm"
+                    >
+                      <option value="">— без автора —</option>
+                      {authors.map((author) => (
+                        <option key={author.id} value={author.id}>
+                          {author.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              )}
+            </div>
           </div>
         </Panel>
 
         {/* ---------------------------------------------- body ---------- */}
-        <Panel
-          title="Текст материала"
-          badge={`${wordCount} слов`}
-          toolbar={
-            <div className="flex rounded-sm border border-[var(--color-border-strong)] p-0.5">
-              {(
-                [
-                  ['prose', 'Текст'],
-                  ['blocks', 'Блоки'],
-                ] as ['prose' | 'blocks', string][]
-              ).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setBodyMode(mode)}
-                  className={cn(
-                    'rounded-sm px-2.5 py-1 text-xs font-medium transition-colors',
-                    bodyMode === mode
-                      ? 'bg-[var(--color-accent)] text-white'
-                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          }
-        >
-          {bodyMode === 'prose' ? (
-            <ProseEditor
-              document={document}
-              onChange={setDocument}
-              disabled={busy === 'rewriteAll'}
-              promptSeed={title}
-              imageCandidates={imageCandidates}
-            />
-          ) : (
-            <BlockEditor
-              document={document}
-              onChange={setDocument}
-              onRewriteBlock={rewriteBlock}
-              onPickImage={pickInlineImage}
-              disabled={busy === 'rewriteAll'}
-            />
-          )}
+        <Panel title="Текст материала" badge={`${wordCount} слов`}>
+          <RichEditor
+            document={document}
+            onChange={setDocument}
+            disabled={busy === 'rewriteAll'}
+            promptSeed={title}
+            imageCandidates={imageCandidates}
+          />
         </Panel>
 
         {/* ---------------------------------------------- SEO ----------- */}
@@ -806,6 +708,22 @@ export function PostEditor({
 
       {/* -------------------------------------------------- sidebar ----- */}
       <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+        <Panel
+          title="Рубрики"
+          badge={`${1 + extraCategoryIds.length}`}
+          tone={categoryId ? 'default' : 'warning'}
+        >
+          <CategoryPicker
+            categories={categories}
+            primaryId={categoryId}
+            extraIds={extraCategoryIds}
+            onChange={(primary, extra) => {
+              setCategoryId(primary)
+              setExtraCategoryIds(extra)
+            }}
+          />
+        </Panel>
+
         <Panel title="Публикация">
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-1.5">
@@ -937,17 +855,6 @@ export function PostEditor({
         )}
       </aside>
 
-      {inlinePicker && (
-        <MediaPicker
-          open
-          onClose={() => {
-            inlinePicker(null)
-          }}
-          onPick={(image) => inlinePicker(image)}
-          promptSeed={title}
-          candidates={imageCandidates}
-        />
-      )}
     </div>
   )
 }

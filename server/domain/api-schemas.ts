@@ -10,6 +10,8 @@ import { z } from 'zod'
 
 export const postSchema = z.object({
   title: z.string().min(1, 'Заголовок обязателен').max(300),
+  // Kept optional for older payloads; the editor no longer sends it and the
+  // public article no longer renders it.
   subtitle: z.string().max(400).optional().default(''),
   slug: z.string().max(120).optional().default(''),
   excerpt: z.string().max(600).optional().default(''),
@@ -26,7 +28,8 @@ export const postSchema = z.object({
   ]),
   origin: z.enum(['MANUAL', 'URL_IMPORT', 'AI_GENERATED', 'SEED']).optional(),
   language: z.string().max(10).optional(),
-  categoryId: z.string().min(1, 'Категория обязательна'),
+  categoryId: z.string().min(1, 'Выберите хотя бы одну рубрику'),
+  extraCategoryIds: z.array(z.string().max(40)).max(10).optional(),
   authorId: z.string().nullable().optional(),
   heroImageId: z.string().nullable().optional(),
   ogImageId: z.string().nullable().optional(),

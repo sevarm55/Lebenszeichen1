@@ -208,11 +208,24 @@ model Category {
   showInNav Boolean @default(true)
 
   posts     Post[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  taggedIn  PostCategory[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@unique([siteId, slug])
   @@index([siteId, enabled, order])
+}
+
+/// Secondary category membership. The primary one lives on `Post.categoryId`
+/// because it decides the URL and must be exactly one.
+model PostCategory {
+  postId     String
+  categoryId String
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
 }
 
 model Tag {
@@ -280,8 +293,12 @@ model Post {
   origin   PostOrigin @default(MANUAL)
   language String     @default("de")
 
+  /// Primary category — owns the article URL and the breadcrumb.
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
+
+  /// Additional categories the article also appears under.
+  extraCategories PostCategory[]
 
   authorId String?
   author   Author? @relation(fields: [authorId], references: [id])

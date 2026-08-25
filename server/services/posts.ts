@@ -50,6 +50,16 @@ export interface PageResult<T> {
   totalPages: number
 }
 
+/**
+ * Membership of a rubric: the primary category, plus any article that lists it
+ * as a secondary one. Written once here so no listing can forget half of it.
+ */
+export function inCategory(categoryId: string): Prisma.PostWhereInput {
+  return {
+    OR: [{ categoryId }, { extraCategories: { some: { categoryId } } }],
+  }
+}
+
 export async function getLatestPosts(options: {
   page?: number
   perPage?: number
@@ -62,7 +72,7 @@ export async function getLatestPosts(options: {
 
   const where: Prisma.PostWhereInput = {
     ...publishedWhere(siteId),
-    ...(options.categoryId ? { categoryId: options.categoryId } : {}),
+    ...(options.categoryId ? inCategory(options.categoryId) : {}),
     ...(options.excludeIds?.length ? { id: { notIn: options.excludeIds } } : {}),
   }
 
@@ -224,7 +234,7 @@ export async function getRelatedPosts(post: {
   const sameCategory = await prisma.post.findMany({
     where: {
       ...publishedWhere(siteId),
-      categoryId: post.categoryId,
+      ...inCategory(post.categoryId),
       id: { notIn: exclude },
     },
     select: POST_CARD_SELECT,

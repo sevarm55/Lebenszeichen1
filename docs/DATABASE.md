@@ -35,7 +35,7 @@ The centre of the schema.
 |---|---|
 | Content | `title` `subtitle` `slug` `excerpt` `content` (Json blocks) |
 | State | `status` `origin` `language` `publishedAt` `scheduledAt` |
-| Relations | `categoryId` `authorId` `heroImageId` `ogImageId` `sourceId` |
+| Relations | `categoryId` (primary) `extraCategories` `authorId` `heroImageId` `ogImageId` `sourceId` |
 | SEO | `seoTitle` `metaDescription` `canonicalUrl` `ogTitle` `ogDescription` `socialHeadline` |
 | Provenance | `sourceUrl` `sourceDomain` `sourceNote` `aiUsed` `aiProvider` `aiModel` |
 | Editorial | `featured` `isEditorsPick` `readingTime` `wordCount` `views` |
@@ -60,6 +60,13 @@ read through `parseDocument`.
 @@index([sourceUrl])                                         // duplicate check
 @@index([siteId, featured, status])                          // homepage lead
 ```
+
+### PostCategory
+
+Secondary category membership. The primary category stays on `Post.categoryId`
+because it decides the URL and must be exactly one — an article reachable at two
+addresses splits its own ranking. `inCategory()` in `server/services/posts.ts`
+is the single definition of "belongs to this rubric" and covers both.
 
 ### PostRevision
 
