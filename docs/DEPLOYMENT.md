@@ -83,6 +83,64 @@ pm2 restart lebenszeichen
 pm2 status
 ```
 
+## 5a. Pointing a domain at the deployment
+
+Three things have to line up, in this order.
+
+### 1. DNS (at the registrar)
+
+| Type | Name | Value | TTL |
+|---|---|---|---|
+| A | `@` (or `lebenszeichen.io`) | `93.183.80.122` | 300 |
+| A | `www` | `93.183.80.122` | 300 |
+
+If the domain was just registered its nameservers may not be delegated yet —
+check with `dig +short lebenszeichen.io NS`. An empty answer means the registrar
+has not published nameservers, and no A record you add will resolve until it
+does. Delegation typically takes minutes to a few hours.
+
+Verify before continuing:
+
+```bash
+dig +short lebenszeichen.io A          # must return 93.183.80.122
+```
+
+**Do not run certbot before this returns the right address** — it validates over
+HTTP and a failed run counts against Let's Encrypt's rate limit (5 failures per
+hostname per hour).
+
+### 2. Application
+
+```bash
+cd /var/www/lebenszeichen
+./scripts/set-domain.sh lebenszeichen.io
+```
+
+Rewrites `SITE_URL` and `NEXT_PUBLIC_SITE_URL`, updates `Site.domain`,
+regenerates the fallback OG image with the current `SITE_NAME`, rebuilds and
+restarts. The rebuild is not optional: `NEXT_PUBLIC_*` values are compiled into
+the client bundle.
+
+### 3. nginx + TLS (needs root)
+
+```bash
+sudo cp /var/www/lebenszeichen/deploy/nginx-lebenszeichen.conf \
+        /etc/nginx/sites-available/lebenszeichen
+sudo ln -sf /etc/nginx/sites-available/lebenszeichen /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d lebenszeichen.io -d www.lebenszeichen.io
+```
+
+certbot rewrites the site file itself, adding the TLS block and the redirect
+from port 80. Renewal is automatic.
+
+### 4. Afterwards
+
+- `https://lebenszeichen.io/` returns 200, `http://` redirects to it
+- `https://lebenszeichen.io/sitemap.xml` lists the domain, not the IP
+- Submit the domain to Google Search Console ([SEO.md](SEO.md))
+- Put the publisher id in `public/ads.txt` before applying to AdSense
+
 ## 6. nginx
 
 `/etc/nginx/sites-available/lebenszeichen`:
