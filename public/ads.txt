@@ -1,0 +1,8 @@
+# Authorized Digital Sellers — https://iabtechlab.com/ads-txt/
+#
+# Replace pub-0000000000000000 with your own AdSense publisher id
+# (the ca-pub-XXXX value WITHOUT the "ca-" prefix) before going live.
+# A missing or wrong ads.txt is one of the most common causes of
+# "limited ad serving" in AdSense.
+#
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

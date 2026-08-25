@@ -1,0 +1,520 @@
+// ============================================================================
+//  Lebenszeichen — Database schema
+//  PostgreSQL + Prisma
+//
+//  Multi-site readiness: every content-bearing model already carries a
+//  `siteId` string (defaulting to the DEFAULT_SITE_ID constant). Today a single
+//  Site row exists; adding sites later is a data operation, not a migration of
+//  every table. See docs/FUTURE_MULTI_SITE.md.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- enums ----
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+}
+
+enum PostStatus {
+  DRAFT
+  AI_PROCESSING
+  NEEDS_REVIEW
+  READY
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+  FAILED
+}
+
+enum PostOrigin {
+  MANUAL
+  URL_IMPORT
+  AI_GENERATED
+  SEED
+}
+
+enum AITaskType {
+  SUMMARIZE_SOURCE
+  GENERATE_ARTICLE
+  REWRITE_SECTION
+  GENERATE_HEADLINES
+  GENERATE_SEO
+  GENERATE_TAGS
+  GENERATE_IMAGE
+}
+
+enum AITaskStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MediaSourceType {
+  UPLOAD
+  AI_GENERATED
+  EXTERNAL_URL
+  STOCK
+}
+
+enum SourceStatus {
+  ENABLED
+  BLOCKED
+}
+
+// ---------------------------------------------------------------- site -----
+
+model Site {
+  id        String   @id @default(cuid())
+  key       String   @unique // "de" — stable machine key
+  name      String // SITE_NAME placeholder until branding is decided
+  domain    String
+  locale    String   @default("de-DE")
+  language  String   @default("de")
+  timezone  String   @default("Europe/Berlin")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings     SiteSettings?
+  posts        Post[]
+  categories   Category[]
+  tags         Tag[]
+  authors      Author[]
+  mediaAssets  MediaAsset[]
+  sources      Source[]
+  adPlacements AdPlacement[]
+  redirects    PostRedirect[]
+}
+
+model SiteSettings {
+  id     String @id @default(cuid())
+  siteId String @unique
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // General
+  siteName        String
+  tagline         String  @default("")
+  description     String  @default("")
+  logoUrl         String?
+  faviconUrl      String?
+  defaultLanguage String  @default("de")
+  timezone        String  @default("Europe/Berlin")
+
+  // Publishing
+  postsPerPage      Int     @default(12)
+  defaultAuthorId   String?
+  defaultCategoryId String?
+
+  // SEO
+  seoTitlePattern  String  @default("%s | {siteName}")
+  defaultOgImageId String?
+  organizationName String  @default("")
+  organizationLogo String?
+
+  // Advertising (non-secret switches; IDs live in env)
+  adsEnabled           Boolean @default(false)
+  adsProvider          String  @default("adsense")
+  adsDensity           String  @default("balanced") // low | balanced | high | aggressive
+  adsSidebarEnabled    Boolean @default(true)
+  adsMobileStickyOn    Boolean @default(true)
+  adsMinWordsForInline Int     @default(180)
+  adsMaxInContent      Int     @default(5)
+  adsMinWordsBetween   Int     @default(140)
+
+  // Analytics / consent
+  analyticsProvider String @default("none") // none | ga4
+  cmpProvider       String @default("none") // none | funding-choices | custom
+
+  // Legal placeholders — MUST be filled before production. See docs/DEPLOYMENT.md
+  legalCompanyName String @default("")
+  legalAddress     String @default("")
+  legalEmail       String @default("")
+  legalPhone       String @default("")
+  legalVatId       String @default("")
+  legalManagingDir String @default("")
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------- users ----
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(EDITOR)
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdPosts   Post[]         @relation("PostCreatedBy")
+  updatedPosts   Post[]         @relation("PostUpdatedBy")
+  publishedPosts Post[]         @relation("PostPublishedBy")
+  revisions      PostRevision[]
+  auditLogs      AuditLog[]
+  aiTasks        AITask[]
+  uploads        MediaAsset[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ------------------------------------------------------------- taxonomy ----
+
+model Category {
+  id          String      @id @default(cuid())
+  siteId      String
+  site        Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  description String      @default("")
+  intro       String      @default("")
+  color       String? // optional accent for editorial labels
+  imageId     String?
+  image       MediaAsset? @relation("CategoryImage", fields: [imageId], references: [id])
+
+  seoTitle        String @default("")
+  metaDescription String @default("")
+
+  order     Int     @default(0)
+  enabled   Boolean @default(true)
+  showInNav Boolean @default(true)
+
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, slug])
+  @@index([siteId, enabled, order])
+}
+
+model Tag {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name   String
+  slug   String
+
+  posts     PostTag[]
+  createdAt DateTime  @default(now())
+
+  @@unique([siteId, slug])
+  @@index([siteId])
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+model Author {
+  id       String      @id @default(cuid())
+  siteId   String
+  site     Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name     String
+  slug     String
+  role     String      @default("Redaktion")
+  bio      String      @default("")
+  avatarId String?
+  avatar   MediaAsset? @relation("AuthorAvatar", fields: [avatarId], references: [id])
+  isDemo   Boolean     @default(false)
+  enabled  Boolean     @default(true)
+
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, slug])
+  @@index([siteId])
+}
+
+// ---------------------------------------------------------------- posts ----
+
+model Post {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  title    String
+  subtitle String @default("")
+  slug     String
+  excerpt  String @default("")
+
+  /// Structured document: { version: 1, blocks: Block[] }
+  /// Never a raw HTML blob — see server/domain/blocks.ts
+  content Json
+
+  status   PostStatus @default(DRAFT)
+  origin   PostOrigin @default(MANUAL)
+  language String     @default("de")
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  authorId String?
+  author   Author? @relation(fields: [authorId], references: [id])
+
+  heroImageId String?
+  heroImage   MediaAsset? @relation("PostHero", fields: [heroImageId], references: [id])
+
+  ogImageId String?
+  ogImage   MediaAsset? @relation("PostOg", fields: [ogImageId], references: [id])
+
+  // SEO
+  seoTitle        String @default("")
+  metaDescription String @default("")
+  canonicalUrl    String @default("")
+  ogTitle         String @default("")
+  ogDescription   String @default("")
+  socialHeadline  String @default("")
+
+  // Provenance
+  sourceUrl    String?
+  sourceDomain String?
+  sourceId     String?
+  source       Source? @relation(fields: [sourceId], references: [id])
+  sourceNote   String  @default("")
+  aiUsed       Boolean @default(false)
+  aiProvider   String?
+  aiModel      String?
+
+  // Editorial flags
+  featured      Boolean @default(false)
+  isEditorsPick Boolean @default(false)
+  readingTime   Int     @default(0) // minutes, computed on save
+  wordCount     Int     @default(0)
+  views         Int     @default(0)
+
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdById   String?
+  createdBy     User?   @relation("PostCreatedBy", fields: [createdById], references: [id])
+  updatedById   String?
+  updatedBy     User?   @relation("PostUpdatedBy", fields: [updatedById], references: [id])
+  publishedById String?
+  publishedBy   User?   @relation("PostPublishedBy", fields: [publishedById], references: [id])
+
+  tags      PostTag[]
+  revisions PostRevision[]
+  aiTasks   AITask[]
+  redirects PostRedirect[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, status, publishedAt(sort: Desc)])
+  @@index([siteId, categoryId, status, publishedAt(sort: Desc)])
+  @@index([siteId, status, views(sort: Desc)])
+  @@index([siteId, status, scheduledAt])
+  @@index([sourceUrl])
+  @@index([siteId, featured, status])
+}
+
+model PostRevision {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  /// Full snapshot of the editable post fields at the time of saving
+  snapshot Json
+  note     String @default("")
+
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([postId, createdAt(sort: Desc)])
+}
+
+model PostRedirect {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fromPath  String
+  toPath    String
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  permanent Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([siteId, fromPath])
+  @@index([siteId])
+}
+
+// ---------------------------------------------------------------- media ----
+
+model MediaAsset {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  filename     String
+  originalName String  @default("")
+  url          String // canonical/original URL (local /uploads/... or remote)
+  mimeType     String
+  width        Int     @default(0)
+  height       Int     @default(0)
+  fileSize     Int     @default(0)
+  blurDataUrl  String? // tiny base64 LQIP
+
+  /// [{ width, url, format }] — responsive derivatives
+  variants Json?
+
+  alt     String @default("")
+  caption String @default("")
+  credit  String @default("")
+
+  sourceType    MediaSourceType @default(UPLOAD)
+  sourceUrl     String?
+  license       String          @default("")
+  copyrightInfo String          @default("")
+
+  aiPrompt   String?
+  aiProvider String?
+  aiModel    String?
+
+  uploadedById String?
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  heroFor    Post[]     @relation("PostHero")
+  ogFor      Post[]     @relation("PostOg")
+  categories Category[] @relation("CategoryImage")
+  authors    Author[]   @relation("AuthorAvatar")
+
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([siteId, sourceType])
+}
+
+// -------------------------------------------------------------- sources ----
+
+model Source {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  domain       String
+  name         String
+  url          String       @default("")
+  notes        String       @default("")
+  status       SourceStatus @default(ENABLED)
+  importCount  Int          @default(0)
+  lastImportAt DateTime?
+
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, domain])
+  @@index([siteId, status])
+}
+
+// ------------------------------------------------------------- ai tasks ----
+
+model AITask {
+  id     String       @id @default(cuid())
+  type   AITaskType
+  status AITaskStatus @default(QUEUED)
+
+  provider String
+  model    String @default("")
+
+  /// Trimmed request payload (no secrets)
+  input  Json?
+  /// Provider result or extracted fields
+  output Json?
+
+  error      String?
+  costUsd    Float?
+  durationMs Int?
+
+  postId String?
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([postId])
+}
+
+// ------------------------------------------------------------------ ads ----
+
+model AdPlacement {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  /// Matches AdSlotId in server/ads/placements.ts
+  key         String
+  label       String
+  enabled     Boolean @default(true)
+  /// Optional per-placement override of the network slot id (else read from env)
+  networkSlot String  @default("")
+  order       Int     @default(0)
+  notes       String  @default("")
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, key])
+  @@index([siteId, enabled])
+}
+
+// ------------------------------------------------------------ audit log ----
+
+model AuditLog {
+  id       String  @id @default(cuid())
+  action   String // LOGIN, LOGIN_FAILED, PUBLISH, DELETE, SETTINGS_CHANGE, AI_GENERATE, ...
+  entity   String  @default("")
+  entityId String  @default("")
+  detail   String  @default("")
+  ip       String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([action])
+}
