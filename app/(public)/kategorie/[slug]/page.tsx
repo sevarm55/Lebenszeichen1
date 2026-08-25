@@ -35,7 +35,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { slug } = await params
   const { seite } = await searchParams
   const category = await getCategoryBySlug(slug)
-  if (!category) return { title: 'Nicht gefunden', robots: { index: false, follow: false } }
+  // Raised during metadata so Next emits a real 404 rather than a soft one —
+  // see the article route for the full reasoning.
+  if (!category) notFound()
 
   const settings = await getSettings()
   const page = Math.max(1, Number(seite ?? '1') || 1)

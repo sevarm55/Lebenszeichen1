@@ -26,3 +26,12 @@ export default function Loading() {
     </div>
   )
 }
+
+/*
+ * Deliberately scoped to routes that cannot 404.
+ *
+ * A `loading.tsx` creates a Suspense boundary, and the streamed shell commits a
+ * 200 before the page resolves — which turns `notFound()` on the article and
+ * category routes into a *soft* 404. Google indexes soft 404s, so those routes
+ * must not stream.
+ */

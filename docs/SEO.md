@@ -65,6 +65,16 @@ client-side redirect once the response has started streaming, and crawlers do no
 treat that as a permanent move. Query strings are preserved, so an old link with
 UTM parameters keeps its attribution.
 
+## Hard 404s
+
+A missing article returns a real **404**, not a 200 with a "not found" page.
+Google indexes soft 404s, which is worse than not indexing at all.
+
+Two things make that work: `notFound()` is raised inside `generateMetadata`
+(before the response starts streaming), and there is no `loading.tsx` on the
+article or category routes — a Suspense boundary would commit a 200 first. See
+[ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## URLs
 
 ```

@@ -106,6 +106,28 @@ Covered in [URL_IMPORT.md](URL_IMPORT.md) and [AI_INTEGRATION.md](AI_INTEGRATION
 | `/beliebt` | ISR, 600 s | View counts move slowly |
 | `/admin/**` | Dynamic, `force-dynamic` | Always fresh, always authenticated |
 
+## A constraint worth knowing before adding `loading.tsx`
+
+`loading.tsx` creates a Suspense boundary, and the streamed shell **commits a
+200 before the page component resolves**. On a route that can `notFound()` or
+`redirect()`, that turns a hard 404 into a *soft* one and a 301 into a
+client-side hop — and Google indexes soft 404s.
+
+So loading states live only on routes that cannot 404: `/suche` and `/neueste`.
+Do not add `loading.tsx` to `app/(public)/` or to the article/category routes.
+
+For the same reason, `notFound()` and `redirect()` on the article and category
+routes are raised inside `generateMetadata`, which runs before streaming starts.
+`getPostBySlug` is `React.cache`d, so this costs no extra query.
+
+Verified:
+
+```
+/tiere/gibt-es-nicht       404
+/kategorie/gibt-es-nicht   404
+/erfunden/quatsch          404
+```
+
 ## The block document
 
 `server/domain/blocks.ts` defines eleven block types and `parseDocument`, which

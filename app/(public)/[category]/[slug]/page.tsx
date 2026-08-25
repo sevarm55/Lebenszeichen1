@@ -33,8 +33,19 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category, slug } = await params
   const post = await getPostBySlug(slug)
-  if (!post || post.category.slug !== category) {
-    return { title: 'Nicht gefunden', robots: { index: false, follow: false } }
+
+  // `notFound()` and `redirect()` have to be raised here, not only in the page
+  // component. By the time the component runs, metadata has resolved and the
+  // response has started streaming — Next can then only emit a *soft* 404 or a
+  // client-side redirect, and a soft 404 gets indexed. Raising it during
+  // metadata produces a real 404 / 301. `getPostBySlug` is React-cached, so
+  // this costs no extra query.
+  // `return` rather than a bare call so TypeScript narrows `post` afterwards;
+  // the helper's return type is `Promise<never>`.
+  if (!post) return redirectOrNotFound(category, slug)
+
+  if (post.category.slug !== category) {
+    redirect(`/${post.category.slug}/${post.slug}`)
   }
 
   const settings = await getSettings()
@@ -74,20 +85,26 @@ export async function generateStaticParams() {
   }
 }
 
+/**
+ * Honours the redirect table before giving up, then 404s.
+ *
+ * Middleware already serves slug-change redirects as hard 301s; this is the
+ * fallback for client-side navigations, which bypass middleware.
+ */
+async function redirectOrNotFound(categorySlug: string, slug: string): Promise<never> {
+  const siteId = await getSiteId()
+  const redirectRow = await prisma.postRedirect.findUnique({
+    where: { siteId_fromPath: { siteId, fromPath: `/${categorySlug}/${slug}` } },
+  })
+  if (redirectRow) redirect(redirectRow.toPath)
+  notFound()
+}
+
 export default async function ArticlePage({ params }: PageProps) {
   const { category: categorySlug, slug } = await params
   const post = await getPostBySlug(slug)
 
-  if (!post) {
-    // The slug may have changed while the old URL is still linked from Facebook
-    // or indexed by Google — honour the redirect table before giving up.
-    const siteId = await getSiteId()
-    const redirectRow = await prisma.postRedirect.findUnique({
-      where: { siteId_fromPath: { siteId, fromPath: `/${categorySlug}/${slug}` } },
-    })
-    if (redirectRow) redirect(redirectRow.toPath)
-    notFound()
-  }
+  if (!post) return redirectOrNotFound(categorySlug, slug)
 
   // Correct category in the URL is part of the canonical shape — a mismatch is
   // a redirect, not a second valid URL for the same story.
