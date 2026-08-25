@@ -65,6 +65,10 @@ export function BlockEditor({
   const [busyBlock, setBusyBlock] = useState<string | null>(null)
   const dragIndex = useRef<number | null>(null)
 
+  // Only the first paragraph can be the lead, so only it shows the toggle —
+  // otherwise a 60-block import renders 60 checkboxes nobody wants.
+  const firstParagraphIndex = document.blocks.findIndex((b) => b.type === 'paragraph')
+
   const update = useCallback(
     (blocks: Block[]) => onChange({ version: document.version, blocks }),
     [document.version, onChange],
@@ -222,6 +226,7 @@ export function BlockEditor({
                   onPatch={(changes) => patch(index, changes)}
                   onPickImage={() => chooseImage(index)}
                   disabled={disabled}
+                  isLeadCandidate={index === firstParagraphIndex}
                 />
               </div>
 
@@ -374,11 +379,13 @@ function BlockFields({
   onPatch,
   onPickImage,
   disabled,
+  isLeadCandidate,
 }: {
   block: Block
   onPatch: (changes: Partial<Block>) => void
   onPickImage: () => void
   disabled?: boolean
+  isLeadCandidate?: boolean
 }) {
   switch (block.type) {
     case 'paragraph':
@@ -391,15 +398,17 @@ function BlockFields({
             disabled={disabled}
             rows={3}
           />
-          <label className="ml-2 flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
-            <input
-              type="checkbox"
-              checked={block.lead === true}
-              onChange={(e) => onPatch({ lead: e.target.checked } as Partial<Block>)}
-              disabled={disabled}
-            />
-            Лид-абзац (крупный шрифт)
-          </label>
+          {isLeadCandidate && (
+            <label className="ml-2 flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
+              <input
+                type="checkbox"
+                checked={block.lead === true}
+                onChange={(e) => onPatch({ lead: e.target.checked } as Partial<Block>)}
+                disabled={disabled}
+              />
+              Лид-абзац (крупный шрифт)
+            </label>
+          )}
         </div>
       )
 

@@ -60,18 +60,55 @@ checklist items remain.
 
 Below: **История версий** — the last 10 revisions, restorable.
 
-## Block editor
+## The body editor — two modes
 
-Structured blocks, not an HTML blob. Types: paragraph (with a lead flag),
-H2, H3, image, quote, callout (context/info/warning), list (bulleted or
-numbered), divider, and an explicit ad marker.
+Content is stored as blocks either way. The two modes only change how it is
+*typed*, and the toggle sits in the panel header.
 
-Per block: drag to reorder, move up/down, AI rewrite, delete. Insert between any
-two blocks.
+### Текст (default)
 
-Inline formatting is a closed subset — `**bold**`, `*italic*`,
-`[label](https://url)`. HTML is not accepted, and that is the single strongest
-XSS control in the codebase.
+One large text area, the way a writer expects. After an import a 1900-word
+article would otherwise become 60 separate boxes with 60 checkboxes, which is
+unusable — so this is the default.
+
+| You type | You get |
+|---|---|
+| plain text, blank line between | paragraphs |
+| `## Überschrift` | H2 |
+| `### Unter` | H3 |
+| `> Zitat` (+ a `— Name` line) | quote with attribution |
+| `- Punkt` / `1. Punkt` | bulleted / numbered list |
+| `---` | divider |
+| `!!! Titel \| Text` | callout |
+| `[[block:1]]` | an image/gallery/embed placed earlier |
+
+Inline: `**bold**`, `*italic*`, `[label](https://url)`.
+
+A toolbar inserts the syntax at the caret, and an image button opens the media
+picker — the image becomes a real block and its `[[block:N]]` token marks the
+position. A legend under the field says what each token is, so the markers are
+never cryptic. Deleting a token deletes the block; leaving it alone preserves
+the media id, alt text, caption, credit and aspect ratio through any number of
+edits.
+
+The lead-paragraph flag is one checkbox in the toolbar, not one per paragraph.
+
+Conversion runs on every keystroke and is verified lossless — all 18 seeded
+articles survive three full round trips with identical block types and word
+counts (`npx tsx scripts/prose-roundtrip-check.ts`).
+
+### Блоки
+
+The granular view: every block in its own box with drag-to-reorder, move
+up/down, per-block AI rewrite and delete. Use it to place an image precisely,
+edit a callout, or reorder sections. Types: paragraph (lead flag on the first
+one only), H2, H3, image, quote, callout, list, divider, explicit ad marker.
+
+### Why blocks at all
+
+HTML is never accepted or stored. That is the single strongest XSS control in
+the codebase, and it is also what lets the ad engine reason about word counts
+and section boundaries.
 
 ## Preview `/admin/vorschau/[id]`
 

@@ -5,10 +5,10 @@ import { parseDocument } from '@/server/domain/blocks'
 import { getSiteId } from '@/server/services/site'
 import type { PostEditorInitial } from '@/components/admin/post-editor'
 
-/** Categories and authors the editor form needs, in display order. */
+/** Categories, authors and the tag vocabulary the editor form needs. */
 export async function loadEditorOptions() {
   const siteId = await getSiteId()
-  const [categories, authors] = await Promise.all([
+  const [categories, authors, tagRows] = await Promise.all([
     prisma.category.findMany({
       where: { siteId },
       orderBy: { order: 'asc' },
@@ -19,8 +19,18 @@ export async function loadEditorOptions() {
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
+    // Most-used tags, so an editor picks from the existing vocabulary instead of
+    // inventing a near-duplicate ("hunde" next to "hund") every time.
+    prisma.tag.findMany({
+      where: { siteId },
+      select: { name: true, _count: { select: { posts: true } } },
+      orderBy: { posts: { _count: 'desc' } },
+      take: 30,
+    }),
   ])
-  return { categories, authors }
+
+  const popularTags = tagRows.filter((t) => t._count.posts > 0).map((t) => t.name)
+  return { categories, authors, popularTags }
 }
 
 export function emptyInitial(defaultCategoryId: string): PostEditorInitial {

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 export default async function ImportPage() {
   const user = await requireUser()
   const settings = await getSettings()
-  const { categories, authors } = await loadEditorOptions()
+  const { categories, authors, popularTags } = await loadEditorOptions()
 
   if (categories.length === 0) redirect('/admin/categories?empty=1')
 
@@ -27,6 +27,7 @@ export default async function ImportPage() {
       <ImportWorkspace
         categories={categories}
         authors={authors}
+        popularTags={popularTags}
         aiProvider={{
           id: provider.info.id,
           label: provider.info.label,

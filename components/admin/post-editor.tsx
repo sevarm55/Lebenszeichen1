@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 import { BlockEditor } from '@/components/admin/block-editor'
+import { ProseEditor } from '@/components/admin/prose-editor'
 import { HeroImageField, MediaPicker, type PickedImage } from '@/components/admin/media-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -77,6 +78,8 @@ interface PostEditorProps {
   categories: PostEditorCategory[]
   authors: PostEditorAuthor[]
   aiProvider: { id: string; label: string; ready: boolean; readyHint?: string }
+  /** Existing tag vocabulary, offered as one-click chips. */
+  popularTags?: string[]
   /** Image candidates carried over from a URL import. */
   imageCandidates?: { url: string; alt: string }[]
 }
@@ -88,6 +91,7 @@ export function PostEditor({
   categories,
   authors,
   aiProvider,
+  popularTags = [],
   imageCandidates,
 }: PostEditorProps) {
   const router = useRouter()
@@ -127,6 +131,10 @@ export function PostEditor({
     initial.scheduledAt ? formatDateTimeInput(new Date(initial.scheduledAt)) : '',
   )
 
+  // Prose is the default: after an import a long article becomes dozens of
+  // separate boxes, and nobody wants to edit that. Blocks stay one click away
+  // for precise placement of images, callouts and galleries.
+  const [bodyMode, setBodyMode] = useState<'prose' | 'blocks'>('prose')
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -631,6 +639,29 @@ export function PostEditor({
                 }}
                 placeholder="Введите тег и нажмите Enter"
               />
+
+              {popularTags.filter((t) => !tags.includes(t)).length > 0 && (
+                <div className="mt-2">
+                  <p className="mb-1.5 text-xs text-[var(--color-muted)]">
+                    Часто используемые — нажмите, чтобы добавить:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {popularTags
+                      .filter((t) => !tags.includes(t))
+                      .slice(0, 18)
+                      .map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setTags([...tags, tag])}
+                          className="rounded-sm border border-[var(--color-border-strong)] px-1.5 py-0.5 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </Field>
 
             <div className="flex flex-wrap gap-4 border-t border-[var(--color-border)] pt-3">
@@ -651,14 +682,51 @@ export function PostEditor({
         </Panel>
 
         {/* ---------------------------------------------- body ---------- */}
-        <Panel title="Текст материала" badge={`${wordCount} слов`}>
-          <BlockEditor
-            document={document}
-            onChange={setDocument}
-            onRewriteBlock={rewriteBlock}
-            onPickImage={pickInlineImage}
-            disabled={busy === 'rewriteAll'}
-          />
+        <Panel
+          title="Текст материала"
+          badge={`${wordCount} слов`}
+          toolbar={
+            <div className="flex rounded-sm border border-[var(--color-border-strong)] p-0.5">
+              {(
+                [
+                  ['prose', 'Текст'],
+                  ['blocks', 'Блоки'],
+                ] as ['prose' | 'blocks', string][]
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setBodyMode(mode)}
+                  className={cn(
+                    'rounded-sm px-2.5 py-1 text-xs font-medium transition-colors',
+                    bodyMode === mode
+                      ? 'bg-[var(--color-accent)] text-white'
+                      : 'text-[var(--color-muted)] hover:text-[var(--color-text)]',
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          {bodyMode === 'prose' ? (
+            <ProseEditor
+              document={document}
+              onChange={setDocument}
+              disabled={busy === 'rewriteAll'}
+              promptSeed={title}
+              imageCandidates={imageCandidates}
+            />
+          ) : (
+            <BlockEditor
+              document={document}
+              onChange={setDocument}
+              onRewriteBlock={rewriteBlock}
+              onPickImage={pickInlineImage}
+              disabled={busy === 'rewriteAll'}
+            />
+          )}
         </Panel>
 
         {/* ---------------------------------------------- SEO ----------- */}
@@ -888,11 +956,13 @@ function Panel({
   title,
   badge,
   tone = 'default',
+  toolbar,
   children,
 }: {
   title: string
   badge?: string
   tone?: 'default' | 'accent' | 'warning' | 'success'
+  toolbar?: React.ReactNode
   children: React.ReactNode
 }) {
   const badgeClass = {
@@ -904,13 +974,14 @@ function Panel({
 
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface)]">
-      <header className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
+      <header className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
         <h2 className="text-sm font-semibold">{title}</h2>
         {badge && (
           <span className={`rounded-sm px-1.5 py-0.5 text-[0.6875rem] font-medium ${badgeClass}`}>
             {badge}
           </span>
         )}
+        {toolbar && <div className="ml-auto">{toolbar}</div>}
       </header>
       <div className="p-4">{children}</div>
     </section>

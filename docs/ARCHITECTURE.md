@@ -137,7 +137,14 @@ it — the DB column, AI output, the importer, the editor.
 
 Inline emphasis is a closed subset: `**bold**`, `*italic*`,
 `[label](https://url)`, rendered by `components/public/rich-text.tsx` into real
-React elements. There is no `dangerouslySetInnerHTML` anywhere in the article
+React elements.
+
+`server/domain/prose.ts` converts between that block array and one plain-text
+document, which is what the editor's default "Текст" mode edits. Blocks that
+have no text form (image, gallery, embed, ad) are preserved *by reference*
+through a `[[block:N]]` token, so prose editing can never silently destroy an
+image an editor placed. Round-trip fidelity is checked by
+`scripts/prose-roundtrip-check.ts`. There is no `dangerouslySetInnerHTML` anywhere in the article
 path, and `safeHref` drops anything that is not http(s).
 
 ## Ads
