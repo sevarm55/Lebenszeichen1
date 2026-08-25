@@ -37,8 +37,9 @@ Left column:
 **SEO**, **Теги** and **Варианты заголовка**. The provider and its readiness are
 shown; if it is not configured you get an explanation, not a dead button.
 
-**Основные поля** — title (with per-field rewrite and a live duplicate check on
-blur), tags, and the `featured` / `editor's pick` switches.
+**Основные поля** — just the headline (with per-field rewrite and a live
+duplicate check on blur) plus the **Дополнительно** disclosure. Everything that
+is set once and forgotten moved to the sidebar.
 
 **No field enforces a length.** Character counts are shown for information only,
 and a limit is named just where an external system actually truncates: Google
@@ -60,13 +61,20 @@ There is no subtitle field — the public article does not render one.
 
 **Текст материала** — the block editor (below).
 
-**SEO и социальные сети** — SEO title, meta description, OG title/description,
-social headline, canonical URL, and — for imported posts — a public source note.
+**SEO и социальные сети** — collapsed by default, opened when needed. SEO title,
+meta description, OG title/description, social headline, canonical URL, and —
+for imported posts — a public source note. The header badge turns amber while
+the meta description is empty, so a collapsed panel never hides a real problem.
 
 Right column, sticky:
 
-**Обложка** — the media picker, in the sidebar next to the publish controls
-where it is actually needed. The panel turns amber while no cover is set.
+**Обложка** — the media picker, next to the publish controls where it is
+actually needed. The panel turns amber while no cover is set.
+
+**Теги** — with a count badge.
+
+**Размещение** — the two placement switches: candidate for the homepage lead
+block, and editor's pick (the "Für dich ausgewählt" rail).
 
 **Рубрики** — checkbox list, several may be selected. The starred one is
 primary: it owns the article URL and the breadcrumb, and clicking another star

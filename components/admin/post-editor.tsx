@@ -484,56 +484,6 @@ export function PostEditor({
               </div>
             )}
 
-            <Field label="Теги">
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-surface-sunken)] px-2 py-1 text-xs"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => setTags(tags.filter((t) => t !== tag))}
-                      className="text-[var(--color-muted-soft)] hover:text-red-600"
-                      aria-label={`Удалить тег ${tag}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <Input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
-                    e.preventDefault()
-                    const value = tagInput.trim().replace(/^#/, '')
-                    if (value && !tags.includes(value)) setTags([...tags, value])
-                    setTagInput('')
-                  }
-                }}
-                placeholder="Введите тег и нажмите Enter"
-              />
-
-            </Field>
-
-            <div className="flex flex-wrap gap-4 border-t border-[var(--color-border)] pt-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
-                Показывать в главном блоке
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={editorsPick}
-                  onChange={(e) => setEditorsPick(e.target.checked)}
-                />
-                Выбор редакции
-              </label>
-            </div>
-
             {/* Slug is generated from the title and the author rarely changes —
                 both are here for the rare case, not in the daily path. */}
             <div className="border-t border-[var(--color-border)] pt-3">
@@ -641,7 +591,13 @@ export function PostEditor({
         </Panel>
 
         {/* ---------------------------------------------- SEO ----------- */}
-        <Panel title="SEO и социальные сети">
+        <Panel
+          title="SEO и социальные сети"
+          collapsible
+          defaultOpen={false}
+          badge={metaDescription.trim() ? undefined : 'нет описания'}
+          tone={metaDescription.trim() ? 'default' : 'warning'}
+        >
           <div className="space-y-4">
             <Field label="SEO-заголовок" htmlFor="seoTitle">
               <Input id="seoTitle" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} />
@@ -865,6 +821,73 @@ export function PostEditor({
           />
         </Panel>
 
+        <Panel title="Теги" badge={tags.length ? String(tags.length) : undefined}>
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-surface-sunken)] px-2 py-1 text-xs"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => setTags(tags.filter((t) => t !== tag))}
+                    className="text-[var(--color-muted-soft)] hover:text-red-600"
+                    aria-label={`Удалить тег ${tag}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <Input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+                  e.preventDefault()
+                  const value = tagInput.trim().replace(/^#/, '')
+                  if (value && !tags.includes(value)) setTags([...tags, value])
+                  setTagInput('')
+                }
+              }}
+              placeholder="Введите тег и нажмите Enter"
+            />
+        </Panel>
+
+        <Panel title="Размещение">
+          <div className="space-y-2.5">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={featured}
+                onChange={(e) => setFeatured(e.target.checked)}
+              />
+              <span>
+                Показывать в главном блоке
+                <span className="block text-xs text-[var(--color-muted)]">
+                  Кандидат на большую карточку вверху главной страницы.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={editorsPick}
+                onChange={(e) => setEditorsPick(e.target.checked)}
+              />
+              <span>
+                Выбор редакции
+                <span className="block text-xs text-[var(--color-muted)]">
+                  Попадает в блок «Für dich ausgewählt».
+                </span>
+              </span>
+            </label>
+          </div>
+        </Panel>
+
         {initial.aiUsed && (
           <Panel title="Происхождение">
             <dl className="space-y-1 text-xs">
@@ -886,14 +909,20 @@ function Panel({
   badge,
   tone = 'default',
   toolbar,
+  collapsible,
+  defaultOpen = true,
   children,
 }: {
   title: string
   badge?: string
   tone?: 'default' | 'accent' | 'warning' | 'success'
   toolbar?: React.ReactNode
+  /** Renders the header as a disclosure toggle. */
+  collapsible?: boolean
+  defaultOpen?: boolean
   children: React.ReactNode
 }) {
+  const [open, setOpen] = useState(defaultOpen)
   const badgeClass = {
     default: 'bg-[var(--color-surface-sunken)] text-[var(--color-muted)]',
     accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
@@ -903,8 +932,25 @@ function Panel({
 
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface)]">
-      <header className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
-        <h2 className="text-sm font-semibold">{title}</h2>
+      <header
+        className={cn(
+          'flex flex-wrap items-center gap-2 px-4 py-2.5',
+          (!collapsible || open) && 'border-b border-[var(--color-border)]',
+        )}
+      >
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            className="flex items-center gap-1.5 text-sm font-semibold hover:text-[var(--color-accent)]"
+          >
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
+            {title}
+          </button>
+        ) : (
+          <h2 className="text-sm font-semibold">{title}</h2>
+        )}
         {badge && (
           <span className={`rounded-sm px-1.5 py-0.5 text-[0.6875rem] font-medium ${badgeClass}`}>
             {badge}
@@ -912,7 +958,7 @@ function Panel({
         )}
         {toolbar && <div className="ml-auto">{toolbar}</div>}
       </header>
-      <div className="p-4">{children}</div>
+      {(!collapsible || open) && <div className="p-4">{children}</div>}
     </section>
   )
 }

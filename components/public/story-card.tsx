@@ -26,7 +26,7 @@ function Meta({
   showCategory?: boolean
 }) {
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-xs', className)}>
+    <div className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]', className)}>
       {showCategory && (
         <Link
           href={`/kategorie/${post.category.slug}`}
@@ -110,7 +110,7 @@ export function LeadStoryCard({ post, priority }: { post: PostCard; priority?: b
           </Link>
         </h2>
         {post.excerpt && (
-          <p className="mt-3 max-w-2xl text-[0.9375rem] leading-relaxed text-[var(--color-muted)] sm:text-base">
+          <p className="mt-3 max-w-2xl text-base leading-[1.65] text-[var(--color-text-soft)] sm:text-[1.0625rem]">
             {post.excerpt}
           </p>
         )}
@@ -142,7 +142,7 @@ export function HorizontalStoryCard({
         <h3
           className={cn(
             'font-serif font-semibold leading-snug tracking-[-0.01em]',
-            isCompact ? 'text-[0.9375rem]' : 'text-base sm:text-lg',
+            isCompact ? 'text-[1.0625rem]' : 'text-[1.0625rem] sm:text-xl',
           )}
         >
           <Link href={postHref(post)} className="story-link">
@@ -150,7 +150,7 @@ export function HorizontalStoryCard({
           </Link>
         </h3>
         {!isCompact && post.excerpt && (
-          <p className="mt-1.5 hidden text-sm leading-relaxed text-[var(--color-muted)] sm:line-clamp-2 sm:block">
+          <p className="mt-1.5 hidden text-[0.9375rem] leading-[1.6] text-[var(--color-muted)] sm:line-clamp-2 sm:block">
             {post.excerpt}
           </p>
         )}
@@ -168,13 +168,13 @@ export function GridStoryCard({ post, priority }: { post: PostCard; priority?: b
       </Link>
       <div className="mt-3 flex flex-1 flex-col">
         <Meta post={post} className="mb-1.5" />
-        <h3 className="font-serif text-lg font-semibold leading-snug tracking-[-0.01em] sm:text-xl">
+        <h3 className="font-serif text-xl font-semibold leading-snug tracking-[-0.01em]">
           <Link href={postHref(post)} className="story-link">
             {post.title}
           </Link>
         </h3>
         {post.excerpt && (
-          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[var(--color-muted)]">
+          <p className="mt-2 line-clamp-3 text-[0.9375rem] leading-[1.6] text-[var(--color-muted)]">
             {post.excerpt}
           </p>
         )}
@@ -193,7 +193,7 @@ export function CompactStoryCard({ post, index }: { post: PostCard; index?: numb
         </span>
       )}
       <div className="min-w-0">
-        <h3 className="font-serif text-[0.9375rem] font-semibold leading-snug">
+        <h3 className="font-serif text-base font-semibold leading-snug">
           <Link href={postHref(post)} className="story-link">
             {post.title}
           </Link>
@@ -243,7 +243,7 @@ export function SidebarStoryCard({ post }: { post: PostCard }) {
       <Link href={postHref(post)} className="flex gap-3">
         <div className="min-w-0 flex-1">
           <span className="eyebrow eyebrow-muted">{post.category.name}</span>
-          <h3 className="mt-1 font-serif text-[0.9375rem] font-semibold leading-snug story-link">
+          <h3 className="mt-1 font-serif text-base font-semibold leading-snug story-link">
             {post.title}
           </h3>
         </div>

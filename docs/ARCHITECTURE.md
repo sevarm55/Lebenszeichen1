@@ -145,6 +145,19 @@ themselves while storage stays on blocks. Round-trip fidelity is checked by
 `scripts/editor-roundtrip-check.ts`. There is no `dangerouslySetInnerHTML` anywhere in the article
 path, and `safeHref` drops anything that is not http(s).
 
+## Typography
+
+**Source Serif 4** for headlines and reading text, **Inter** for UI and meta.
+
+Source Serif was drawn for immersive on-screen reading: sturdier stems, a larger
+x-height and wider counters than the high-contrast display serifs that look
+elegant in a specimen and turn grey over 1500 words. Reading text runs at 20px
+on a phone and 21px on a desktop with ~1.8 leading, in `#2c2a22` rather than a
+pale grey — people are meant to finish these pieces.
+
+The reading column is capped at `43rem`, which lands around 65 characters per
+line at that size.
+
 ## Ads
 
 Placement definitions in `server/ads/placements.ts`, density algorithm in

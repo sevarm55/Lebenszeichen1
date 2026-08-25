@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Newsreader } from 'next/font/google'
+import { Inter, Source_Serif_4 } from 'next/font/google'
 
 import './globals.css'
 import { siteConfig } from '@/config/site'
@@ -10,12 +10,20 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-const newsreader = Newsreader({
+/**
+ * Source Serif 4 rather than a display serif.
+ *
+ * It was drawn for immersive on-screen reading: sturdier stems, larger
+ * x-height and wider counters than the high-contrast serifs that look elegant
+ * in a specimen and turn grey in a 1500-word article. Legibility beats
+ * character here — people are meant to finish these pieces.
+ */
+const serif = Source_Serif_4({
   subsets: ['latin', 'latin-ext'],
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '600', '700'],
   style: ['normal', 'italic'],
-  variable: '--font-newsreader',
+  variable: '--font-serif-family',
 })
 
 export const metadata: Metadata = {
@@ -37,7 +45,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={`${inter.variable} ${newsreader.variable}`}>
+    <html lang="de" className={`${inter.variable} ${serif.variable}`}>
       <head>
         {/*
           Google Consent Mode v2 defaults.

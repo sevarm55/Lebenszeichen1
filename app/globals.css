@@ -10,14 +10,14 @@
 
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-serif: var(--font-newsreader), ui-serif, Georgia, 'Times New Roman', serif;
+  --font-serif: var(--font-serif-family), ui-serif, Georgia, 'Times New Roman', serif;
 
   --color-background: #fbfaf7;
   --color-surface: #ffffff;
   --color-surface-sunken: #f4f2ed;
   --color-text: #16150f;
-  --color-text-soft: #3d3b33;
-  --color-muted: #6f6c61;
+  --color-text-soft: #2c2a22;
+  --color-muted: #605d53;
   --color-muted-soft: #9a968a;
   --color-border: #e5e1d8;
   --color-border-strong: #cfc9bb;
@@ -131,17 +131,21 @@
     max-width: var(--reading-measure);
   }
 
+  /* Reading text. Sizes chosen for comfort at arm's length, not for density:
+     ~20px on a phone, ~21px on a desktop, with generous leading. */
   .article-body {
     font-family: var(--font-serif);
-    font-size: 1.1875rem;
-    line-height: 1.75;
+    font-size: 1.25rem;
+    line-height: 1.8;
+    letter-spacing: 0.003em;
     color: var(--color-text-soft);
+    -webkit-font-smoothing: antialiased;
   }
 
   @media (min-width: 768px) {
     .article-body {
-      font-size: 1.25rem;
-      line-height: 1.72;
+      font-size: 1.3125rem;
+      line-height: 1.78;
     }
   }
 

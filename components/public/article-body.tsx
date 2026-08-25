@@ -60,8 +60,8 @@ function BlockView({ block, index }: { block: Block; index: number }) {
         <p
           className={
             block.lead
-              ? 'mb-6 text-[1.3125rem] font-medium leading-[1.6] text-[var(--color-text)] md:text-[1.4375rem]'
-              : 'mb-6'
+              ? 'mb-7 text-[1.375rem] font-normal leading-[1.62] text-[var(--color-text)] md:text-[1.5rem]'
+              : 'mb-7'
           }
         >
           <RichText text={block.text} />
@@ -100,7 +100,7 @@ function BlockView({ block, index }: { block: Block; index: number }) {
             />
           </div>
           {(block.caption || block.credit) && (
-            <figcaption className="mt-2 font-sans text-[0.8125rem] leading-relaxed text-[var(--color-muted)]">
+            <figcaption className="mt-2.5 font-sans text-sm leading-relaxed text-[var(--color-muted)]">
               {block.caption}
               {block.credit && (
                 <span className="text-[var(--color-muted-soft)]">
