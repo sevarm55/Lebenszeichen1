@@ -445,14 +445,14 @@ export function SettingsForm({
               Эти данные обязательны по немецкому праву (§ 5 DDG). Без них сайт нельзя публиковать —
               и AdSense не одобрит заявку.
             </p>
-            <Field label="Название компании / ФИО" htmlFor="legalName">
+            <Field label="ФИО или название компании" htmlFor="legalName">
               <Input
                 id="legalName"
                 value={settings.legalCompanyName}
                 onChange={(e) => patch({ legalCompanyName: e.target.value })}
               />
             </Field>
-            <Field label="Ответственное лицо" htmlFor="legalDir">
+            <Field label="Управляющий (только для юрлица)" htmlFor="legalDir">
               <Input
                 id="legalDir"
                 value={settings.legalManagingDir}
@@ -475,7 +475,7 @@ export function SettingsForm({
                   onChange={(e) => patch({ legalEmail: e.target.value })}
                 />
               </Field>
-              <Field label="Телефон" htmlFor="legalPhone">
+              <Field label="Телефон (необязательно)" htmlFor="legalPhone">
                 <Input
                   id="legalPhone"
                   value={settings.legalPhone}
@@ -483,7 +483,7 @@ export function SettingsForm({
                 />
               </Field>
             </div>
-            <Field label="USt-IdNr." htmlFor="legalVat">
+            <Field label="USt-IdNr. (физлицу обычно не нужен)" htmlFor="legalVat">
               <Input
                 id="legalVat"
                 value={settings.legalVatId}

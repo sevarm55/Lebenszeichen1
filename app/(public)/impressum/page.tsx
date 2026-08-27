@@ -10,21 +10,32 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Impressum',
     description: 'Anbieterkennzeichnung nach § 5 DDG.',
     path: '/impressum',
-    noindex: true,
     siteName: settings.siteName,
     titlePattern: settings.seoTitlePattern,
   })
 }
 
 /**
- * Anbieterkennzeichnung. The values are intentionally placeholders — inventing
- * an operator's legal identity would be both useless and unlawful. They are
- * filled in at /admin/settings before launch.
+ * Anbieterkennzeichnung nach § 5 DDG.
+ *
+ * The identity values are placeholders until filled at /admin/settings —
+ * inventing an operator's legal identity would be both useless and unlawful.
+ *
+ * The optional sections (Vertreten durch, USt-IdNr., Telefon) render only when
+ * they hold a value. A private individual running the site has no managing
+ * director and usually no VAT id, and printing empty headings for them would
+ * make the notice look wrong rather than complete.
  */
 export default async function ImprintPage() {
   const settings = await getSettings()
   const { legal } = settings
-  const ph = (value: string) => (value.startsWith('[') ? <Placeholder>{value}</Placeholder> : value)
+  const isPlaceholder = (value: string) => !value || value.startsWith('[')
+  const ph = (value: string) =>
+    isPlaceholder(value) ? <Placeholder>{value || '[NICHT AUSGEFÜLLT]'}</Placeholder> : value
+  const has = (value: string) => !isPlaceholder(value)
+
+  // A sole operator is their own responsible person under § 18 Abs. 2 MStV.
+  const responsible = has(legal.managingDirector) ? legal.managingDirector : legal.companyName
 
   return (
     <LegalShell title="Impressum" intro="Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG).">
@@ -35,22 +46,34 @@ export default async function ImprintPage() {
         {ph(legal.address)}
       </p>
 
-      <h2>Vertreten durch</h2>
-      <p>{ph(legal.managingDirector)}</p>
+      {has(legal.managingDirector) && (
+        <>
+          <h2>Vertreten durch</h2>
+          <p>{legal.managingDirector}</p>
+        </>
+      )}
 
       <h2>Kontakt</h2>
       <p>
-        Telefon: {ph(legal.phone)}
-        <br />
         E-Mail: {ph(legal.email)}
+        {has(legal.phone) && (
+          <>
+            <br />
+            Telefon: {legal.phone}
+          </>
+        )}
       </p>
 
-      <h2>Umsatzsteuer-Identifikationsnummer</h2>
-      <p>Gemäß § 27 a Umsatzsteuergesetz: {ph(legal.vatId)}</p>
+      {has(legal.vatId) && (
+        <>
+          <h2>Umsatzsteuer-Identifikationsnummer</h2>
+          <p>Gemäß § 27 a Umsatzsteuergesetz: {legal.vatId}</p>
+        </>
+      )}
 
       <h2>Redaktionell verantwortlich</h2>
       <p>
-        {ph(legal.managingDirector)}
+        {ph(responsible)}
         <br />
         {ph(legal.address)}
       </p>

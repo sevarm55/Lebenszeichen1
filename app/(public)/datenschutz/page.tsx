@@ -11,7 +11,6 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Datenschutzerklärung',
     description: 'Informationen zur Verarbeitung personenbezogener Daten nach DSGVO.',
     path: '/datenschutz',
-    noindex: true,
     siteName: settings.siteName,
     titlePattern: settings.seoTitlePattern,
   })
